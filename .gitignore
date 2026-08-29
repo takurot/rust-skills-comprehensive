@@ -1,0 +1,9 @@
+# Vendored upstream course (~56MB) — used only as source material while authoring
+# skills, pinned via the commit noted in docs/PLAN.md and each skill's `source:`
+# frontmatter. Not shipped in this distribution; clone it yourself if you need to
+# re-derive or update a skill from the original course text:
+#   git clone https://github.com/google/comprehensive-rust ref/comprehensive-rust
+ref/comprehensive-rust/
+
+# OS cruft
+.DS_Store

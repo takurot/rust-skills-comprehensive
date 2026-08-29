@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Install script for rust-skills-comprehensive.
+#
+# Copies (or symlinks) one or more skills from this repo's skills/ directory
+# into a Claude Code skills directory — either a project's .claude/skills/
+# or the user's global ~/.claude/skills/.
+#
+# Usage:
+#   ./install.sh                          # install all skills, project-level (./.claude/skills)
+#   ./install.sh --global                 # install all skills, global (~/.claude/skills)
+#   ./install.sh --dest /path/to/project  # install all skills into <path>/.claude/skills
+#   ./install.sh rust-api-design rust-async     # install only the named skills
+#   ./install.sh --global rust-pinning          # combine scope + selection
+#   ./install.sh --symlink                # symlink instead of copy (repo devs: live-edit)
+#   ./install.sh --list                   # list available skills and exit
+#   ./install.sh --force ...              # overwrite an existing install of the same skill
+#
+# Re-run any time to pick up updates (add --force to overwrite existing copies;
+# symlink installs always reflect the latest content with no re-run needed).
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SKILLS_SRC="$SCRIPT_DIR/skills"
+
+MODE="copy"          # copy | symlink
+DEST=""              # resolved target .../.claude/skills directory
+FORCE=0
+SELECTED=()
+
+usage() {
+    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+list_skills() {
+    echo "Available skills:"
+    for d in "$SKILLS_SRC"/*/; do
+        name="$(basename "$d")"
+        desc="$(awk -F': ' '/^description:/{ $1=""; print substr($0,2); exit }' "$d/SKILL.md")"
+        printf '  %-28s %s\n' "$name" "$desc"
+    done
+}
+
+PROJECT_DIR="$(pwd)"
+SCOPE="project"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --global)
+            SCOPE="global"
+            shift
+            ;;
+        --dest)
+            SCOPE="custom"
+            PROJECT_DIR="$2"
+            shift 2
+            ;;
+        --symlink)
+            MODE="symlink"
+            shift
+            ;;
+        --force)
+            FORCE=1
+            shift
+            ;;
+        --list)
+            list_skills
+            exit 0
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --*)
+            echo "Unknown option: $1" >&2
+            usage
+            exit 1
+            ;;
+        *)
+            SELECTED+=("$1")
+            shift
+            ;;
+    esac
+done
+
+case "$SCOPE" in
+    global)
+        DEST="$HOME/.claude/skills"
+        ;;
+    project|custom)
+        DEST="$PROJECT_DIR/.claude/skills"
+        ;;
+esac
+
+if [[ ! -d "$SKILLS_SRC" ]]; then
+    echo "error: $SKILLS_SRC not found — run this script from inside the cloned repo." >&2
+    exit 1
+fi
+
+mkdir -p "$DEST"
+
+if [[ ${#SELECTED[@]} -eq 0 ]]; then
+    # Avoid `mapfile`/`readarray` (bash 4+ only) — macOS ships bash 3.2 by default.
+    while IFS= read -r name; do
+        SELECTED+=("$name")
+    done < <(cd "$SKILLS_SRC" && ls -d */ | sed 's#/$##')
+fi
+
+echo "Installing ${#SELECTED[@]} skill(s) → $DEST  (mode: $MODE)"
+echo
+
+installed=0
+skipped=0
+for name in "${SELECTED[@]}"; do
+    src="$SKILLS_SRC/$name"
+    if [[ ! -d "$src" ]]; then
+        echo "  ✗ $name — no such skill in $SKILLS_SRC (see --list)" >&2
+        continue
+    fi
+
+    target="$DEST/$name"
+    if [[ -e "$target" || -L "$target" ]]; then
+        if [[ $FORCE -eq 0 ]]; then
+            echo "  – $name — already exists, skipping (use --force to overwrite)"
+            skipped=$((skipped + 1))
+            continue
+        fi
+        rm -rf "$target"
+    fi
+
+    if [[ "$MODE" == "symlink" ]]; then
+        ln -s "$src" "$target"
+    else
+        cp -R "$src" "$target"
+    fi
+    echo "  ✓ $name"
+    installed=$((installed + 1))
+done
+
+echo
+echo "Done: $installed installed, $skipped skipped."
+if [[ "$SCOPE" == "project" ]]; then
+    echo "Installed to the project you ran this from: $DEST"
+    echo "Re-run from a different project directory, or with --global, as needed."
+fi
