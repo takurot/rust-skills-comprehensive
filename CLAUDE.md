@@ -62,23 +62,32 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## 5. Testing
 
-- Iterate with a scoped run during development: `uv run pytest <path>` (a specific file or
-  directory, not the full suite).
-- Type check after any code change: `uv run mypy src`.
-- Before commit, run the full gate from `docs/WORKFLOW.md` §7 (`ruff check .`, `mypy src`,
-  `pytest --cov=subsched --cov-fail-under=80`) — see that section for the exact commands and the
-  branch-coverage baseline.
+This repo is a content repo (Claude Code skills, not an application), so "testing" means the
+gates in `docs/WORKFLOW.md`, not a unit-test suite.
 
-### TDD workflow (required for new features)
+- Changed a `SKILL.md`: run `./scripts/check-skill-frontmatter.sh` (frontmatter keys + line
+  budget) and follow the Draft → Validate → Refine cycle in `docs/WORKFLOW.md` §4 — in
+  particular the trigger-startup and non-duplication checks, and `/skill-stocktake` for any
+  skill you added or changed.
+- Changed `install.sh`: run `shellcheck --severity=warning install.sh` and the manual smoke test
+  in `docs/WORKFLOW.md` §5 (list / copy install / symlink install / skip-without-`--force` /
+  `--force` overwrite). The same checks run in CI (`.github/workflows/ci.yml`) — see
+  `docs/WORKFLOW.md` §7 for the full pre-PR gate.
+- Before commit, run `git diff --check` for whitespace issues, then the full gate in
+  `docs/WORKFLOW.md` §7.
 
-1. Write failing tests first. Do NOT implement yet.
-2. Run tests, confirm they fail for the right reason.
-3. Implement the minimal code to make tests pass.
-4. Do NOT modify tests to make them pass — fix the implementation.
-5. Run the full test command again before reporting done.
-6. If a test fails for an unrelated reason, stop and report — do not edit unrelated files.
+### Content-change workflow (required for skill edits)
+
+1. Read the relevant upstream Comprehensive Rust source page(s) before writing — don't
+   paraphrase from memory (`docs/WORKFLOW.md` §3.3, §4.1).
+2. Draft the content; state which upstream `source:` pin it derives from.
+3. Validate: frontmatter, line budget, trigger-startup, attribution, non-duplication against
+   `rust-patterns` and neighboring skills (`docs/WORKFLOW.md` §4.2).
+4. Refine based on what Validate found. Do not silently change a skill's `source:` pin, its
+   delineation from other skills, or the `skills/` vs `.claude/skills/` symlink structure.
 
 ### Verification is required
 
-- Never report a task as complete without running the relevant test command and showing output.
+- Never report a task as complete without running the relevant check command and showing
+  output.
 - Do not rely on your own summary as proof — the command output is the source of truth.
