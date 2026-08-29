@@ -7,3 +7,6 @@ ref/comprehensive-rust/
 
 # OS cruft
 .DS_Store
+
+# Serena MCP local project state
+.serena/
