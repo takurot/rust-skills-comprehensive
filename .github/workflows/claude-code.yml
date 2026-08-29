@@ -1,26 +1,30 @@
-# Auto-implement an Issue with Claude Code when it's labeled `claude-code`.
+# Move an Issue's Project item to "In Progress" when a `claude-code` label
+# signals that manual work on it has started.
 #
-# Flow: label added -> this issue's Project item is moved to "In Progress" ->
-# anthropics/claude-code-action reads the issue, implements it, and opens a PR
-# (following docs/WORKFLOW.md's Draft/Validate/Refine and PR conventions as
-# far as the action's own prompt can enforce). Merging that PR flips the
-# Project item to "Done" via the Project's built-in "Pull request merged"
-# workflow — no extra step needed here for that part.
+# This intentionally does NOT run any agent automatically. An earlier
+# version of this workflow also invoked anthropics/claude-code-action on the
+# same label to auto-implement the issue — that was removed after a
+# security review flagged it as a prompt-injection risk against a
+# privileged agent: any labeled issue's body/title (attacker-influenceable
+# text) was fed to an agent holding contents/pull-requests/issues write
+# permissions. Task instructions are given to Claude Code manually
+# (interactive sessions) instead; this workflow only keeps the Project
+# board's Status field honest about when that manual work starts.
 #
-# Required repository secrets (not set by this workflow — add via
-# `gh secret set <NAME>` or the repo Settings UI):
-#   ANTHROPIC_API_KEY — Anthropic API key for the Claude Code action.
-#   PROJECTS_TOKEN     — a personal access token with the `project` scope,
-#                        used only to move the Project item to "In Progress".
-#                        The default GITHUB_TOKEN cannot write to a
-#                        user-owned Project (v2), so this is unfortunately a
-#                        separate token from the one issues/PRs use.
+# To signal "starting work on issue #N": `gh issue edit N --add-label claude-code`
+# (or ask Claude Code to do it — an interactive `gh` session already
+# authenticated with the `project` scope can call the same GraphQL mutation
+# directly, without this workflow at all).
 #
-# The "move to In Progress" step is best-effort (continue-on-error): if the
-# issue isn't in the project yet, or PROJECTS_TOKEN is missing/misscoped,
-# implementation still proceeds — only the Project board reflects it late.
+# Required repository secret:
+#   PROJECTS_TOKEN — a personal access token with the `project` scope.
+#                    GITHUB_TOKEN can't write to a user-owned Project (v2).
+#                    This job requests no repository permissions of its own
+#                    (permissions: {} below) — it only calls the Projects
+#                    GraphQL API with this token, and never checks out or
+#                    reads repository content.
 
-name: Claude Code auto-implement
+name: Mark project item In Progress
 
 on:
   issues:
@@ -40,16 +44,11 @@ env:
   IN_PROGRESS_OPTION_ID: 47fc9ee4
 
 jobs:
-  implement:
+  mark-in-progress:
     if: github.event.label.name == 'claude-code'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+    permissions: {}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Move project item to In Progress
         continue-on-error: true
         env:
@@ -96,10 +95,3 @@ jobs:
             -f itemId="$item_id" \
             -f fieldId="$STATUS_FIELD_ID" \
             -f optionId="$IN_PROGRESS_OPTION_ID"
-
-      - name: Implement with Claude Code
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          label_trigger: claude-code
-          track_progress: "true"
