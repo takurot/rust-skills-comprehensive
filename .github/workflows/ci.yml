@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  shellcheck:
+    name: Shellcheck install.sh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck (warning severity — see docs/WORKFLOW.md §5)
+        run: shellcheck --severity=warning install.sh
+
+  skill-frontmatter:
+    name: Skill frontmatter and line budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check SKILL.md frontmatter and line budget
+        run: ./scripts/check-skill-frontmatter.sh
+
+  install-smoke-test:
+    name: install.sh smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: --list
+        run: ./install.sh --list
+      - name: copy install
+        run: ./install.sh --dest /tmp/rsc-install-test rust-api-design
+      - name: symlink install
+        run: ./install.sh --dest /tmp/rsc-install-test-symlink --symlink rust-api-design
+      - name: re-run without --force is skipped (no error, no overwrite)
+        run: ./install.sh --dest /tmp/rsc-install-test rust-api-design
+      - name: --force overwrites
+        run: ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
+      - name: installed file is present and non-empty
+        run: test -s /tmp/rsc-install-test/.claude/skills/rust-api-design/SKILL.md
