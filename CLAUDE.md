@@ -91,3 +91,17 @@ gates in `docs/WORKFLOW.md`, not a unit-test suite.
 - Never report a task as complete without running the relevant check command and showing
   output.
 - Do not rely on your own summary as proof — the command output is the source of truth.
+
+## 6. Bug Discovery During Other Work
+
+**If you find a bug while doing something else, don't silently fix-and-move-on and don't let it
+block the current task.**
+
+When a bug turns up incidentally (not the thing you were asked to fix):
+1. Search the codebase for similar patterns that could have the same defect (e.g. same
+   copy-pasted logic, the same upstream source reused across multiple skills, the same helper
+   misused elsewhere).
+2. File a GitHub Issue (`gh issue create`) describing the bug, the affected location(s), and any
+   similar patterns found in step 1 — even the ones you didn't confirm are broken.
+3. Continue the original task. Only fix the bug inline if it blocks that task or the user asks
+   for it directly — otherwise let the issue track it, per [Surgical Changes](#3-surgical-changes).
