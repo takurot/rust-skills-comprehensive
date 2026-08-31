@@ -1,0 +1,97 @@
+# Move an Issue's Project item to "In Progress" when a `claude-code` label
+# signals that manual work on it has started.
+#
+# This intentionally does NOT run any agent automatically. An earlier
+# version of this workflow also invoked anthropics/claude-code-action on the
+# same label to auto-implement the issue — that was removed after a
+# security review flagged it as a prompt-injection risk against a
+# privileged agent: any labeled issue's body/title (attacker-influenceable
+# text) was fed to an agent holding contents/pull-requests/issues write
+# permissions. Task instructions are given to Claude Code manually
+# (interactive sessions) instead; this workflow only keeps the Project
+# board's Status field honest about when that manual work starts.
+#
+# To signal "starting work on issue #N": `gh issue edit N --add-label claude-code`
+# (or ask Claude Code to do it — an interactive `gh` session already
+# authenticated with the `project` scope can call the same GraphQL mutation
+# directly, without this workflow at all).
+#
+# Required repository secret:
+#   PROJECTS_TOKEN — a personal access token with the `project` scope.
+#                    GITHUB_TOKEN can't write to a user-owned Project (v2).
+#                    This job requests no repository permissions of its own
+#                    (permissions: {} below) — it only calls the Projects
+#                    GraphQL API with this token, and never checks out or
+#                    reads repository content.
+
+name: Mark project item In Progress
+
+on:
+  issues:
+    types: [labeled]
+
+# IDs below are specific to https://github.com/users/takurot/projects/1
+# (owner: takurot). Re-fetch and update these if the project is recreated
+# or its Status field/options are edited:
+#   gh api graphql -f query='
+#     query($login: String!, $number: Int!) {
+#       user(login: $login) { projectV2(number: $number) { id
+#         field(name: "Status") { ... on ProjectV2SingleSelectField {
+#           id options { id name } } } } } }' -f login=takurot -F number=1
+env:
+  PROJECT_ID: PVT_kwHOAmN8-84Bh1Sx
+  STATUS_FIELD_ID: PVTSSF_lAHOAmN8-84Bh1Sxzhgvjx4
+  IN_PROGRESS_OPTION_ID: 47fc9ee4
+
+jobs:
+  mark-in-progress:
+    if: github.event.label.name == 'claude-code'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Move project item to In Progress
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          PROJECTS_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          ISSUE_NODE_ID: ${{ github.event.issue.node_id }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${PROJECTS_TOKEN:-}" ]]; then
+            echo "PROJECTS_TOKEN secret not set — skipping Status update." >&2
+            exit 0
+          fi
+
+          item_id="$(gh api graphql -f query='
+            query($issueId: ID!) {
+              node(id: $issueId) {
+                ... on Issue {
+                  projectItems(first: 20) {
+                    nodes { id project { id } }
+                  }
+                }
+              }
+            }' -f issueId="$ISSUE_NODE_ID" \
+            --jq ".data.node.projectItems.nodes[] | select(.project.id == \"$PROJECT_ID\") | .id" \
+            | head -1)"
+
+          if [[ -z "$item_id" ]]; then
+            echo "Issue is not (yet) an item in $PROJECT_ID — skipping Status update." >&2
+            exit 0
+          fi
+
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: { singleSelectOptionId: $optionId }
+              }) {
+                projectV2Item { id }
+              }
+            }' \
+            -f projectId="$PROJECT_ID" \
+            -f itemId="$item_id" \
+            -f fieldId="$STATUS_FIELD_ID" \
+            -f optionId="$IN_PROGRESS_OPTION_ID"
