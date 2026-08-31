@@ -43,6 +43,20 @@ vendor the upstream course's two license texts at the repo root.
 (platform skills — still gated on user confirmation), exercise-based eval against the course's
 own exercises/solutions.
 
+**CI hardening (2026-08-31, issues #1–#3)**: closed a real gap in `skill-frontmatter` —
+the script checked presence of frontmatter keys but never caught the actual `rust-pinning`
+regression class above (a `: ` inside an unquoted YAML `description:` value truncates it);
+fixed by failing on any `: ` in the description value, not just inside backticks. Added two
+new CI jobs: `install-list-sync` (`./install.sh --list` vs `skills/*/` — a regression guard;
+`install.sh`'s `--list` already derives from the same glob, so this can't catch drift today,
+only a future refactor that reintroduces it) and `link-check` (relative Markdown links and
+double-bracket refs (e.g. `[[rust-pinning]]`) across `skills/**/*.md`, `README.md`,
+`docs/*.md`). `link-check` intentionally
+does not flag bare-word skill-name mentions in prose (`rust-patterns`, `rust-analyzer`, etc.
+are legitimate references to things outside this repo) — a dangling bare reference to a
+not-yet-built skill (the `rust-bare-metal` defect above) stays a `/skill-stocktake` concern,
+not a script one. `shellcheck` job widened to `scripts/*.sh`.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription

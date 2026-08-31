@@ -129,11 +129,12 @@ commitと異なる版を使う場合は、更新後にpinを書き換える（§
 
 | 確認項目 | 方法 |
 | --- | --- |
-| Frontmatter形式 | `name`・`description`・`source`が揃っている。`description:`の inline code内に`:`直後の空白を含めない（過去に発生したparser不具合、`docs/PLAN.md`参照）。`./scripts/check-skill-frontmatter.sh`（CIの`skill-frontmatter` jobと同じ）で機械的に確認できる |
+| Frontmatter形式 | `name`・`description`・`source`が揃っている。`description:`は引用符なしのYAML plain scalarなので、値のどこであれ`: `（コロン+空白）を含めると値がそこで切れる（過去に発生したparser不具合、`docs/PLAN.md`参照）。`./scripts/check-skill-frontmatter.sh`（CIの`skill-frontmatter` jobと同じ）で機械的に確認できる |
 | Line budget | 同スクリプトが500行のhard budgetを超えていないかCIで検査する。ソフトな目安（既存skillのレンジ137–233行）から大きく外れる場合は`references/`分割を検討する——こちらはCIでは強制しない |
 | Trigger起動性 | そのskillが起動すべき/すべきでない代表的なpromptを数個想定し、`description`の語彙で自己判別できるか確認する（近縁skillとの誤起動がないか） |
 | Attribution | `source:`のCC-BY-4.0/Apache-2.0表記とpinned commitが正しい |
 | 重複回避 | `rust-patterns`や他skillの既存section と同じ結論しか出せない内容になっていないか |
+| リンク・相互参照 | `SKILL.md`/README/`docs/*.md`内の相対Markdownリンクと二重角括弧参照（例: `[[rust-pinning]]`）が実在するファイル/skillを指しているか。`./scripts/check-links.sh`（CIの`link-check` job）で機械的に確認できる。ただし本文中の裸のskill名の言及（例: `rust-patterns`のような本リポジトリ外のskillへの意図的な言及）はチェック対象外——存在しないskillへの裸の言及（例: 過去の`rust-bare-metal`未整合）は引き続き`/skill-stocktake`など手動確認に委ねる |
 
 複数skillを変更した場合、または新skillを追加した場合は`/skill-stocktake`を該当skillに
 scopeして実行し、Keep/Fix/Dropの判定を`docs/PLAN.md`のStatusへ記録する。
@@ -164,13 +165,14 @@ rm -rf /tmp/rsc-install-test
 自動実行される（CIの実行環境で完結し、開発者のhome/globalなskill installには触れない）。
 push/PRで自動的に再確認されるが、ローカルでも変更直後に一度手で流す。
 
-`shellcheck --severity=warning install.sh`もCIの`shellcheck` jobで実行される
+`shellcheck --severity=warning install.sh scripts/*.sh`もCIの`shellcheck` jobで実行される
 （info levelの指摘、例: `ls`より`find`を推奨、は対象外——このworkflow変更のために
 `install.sh`本体の無関係な書き換えを誘発しないための閾値）。ローカルでも同じコマンドで
 再現できる。
 
 bashは3.2互換を維持する（macOS標準bash）。bash 4以降専用の構文（連想配列、`readarray`等）
-は使わない。
+は使わない。`scripts/*.sh`（`check-skill-frontmatter.sh`・`check-install-list-sync.sh`・
+`check-links.sh`）も同じ制約に従う。
 
 ## 6. セキュリティと復旧
 
@@ -190,13 +192,16 @@ PR前に次を実行する。
 git status --short --branch
 git diff --check                 # 空白・改行の混在を検出
 ./scripts/check-skill-frontmatter.sh
-shellcheck --severity=warning install.sh
+./scripts/check-install-list-sync.sh
+./scripts/check-links.sh
+shellcheck --severity=warning install.sh scripts/*.sh
 ```
 
-上記2つは`.github/workflows/ci.yml`でpush/PR時に自動実行されるが、フィードバックを早く
+上記はすべて`.github/workflows/ci.yml`でpush/PR時に自動実行されるが、フィードバックを早く
 得るためローカルでも変更直後に実行する。ただしCIが検証するのは配布経路（frontmatterの
-必須key・line budget・`install.sh`のsmoke test）だけであり、skillの技術的内容の正しさは
-自動化されていない。次は引き続き手動確認に代える。
+必須key・line budget・`install.sh --list`とskills/の整合・リンク切れ・`install.sh`のsmoke
+test）だけであり、skillの技術的内容の正しさは自動化されていない。次は引き続き手動確認に
+代える。
 
 - 変更した`SKILL.md`をfrontmatterから通読し、コードブロックのRustが構文的に妥当か目視確認する
   （`rustc --edition 2021 --crate-type lib -` にコード片を通して素早く構文チェックしてよい。
@@ -278,8 +283,9 @@ gh pr view <PR> --json mergeable,mergeStateStatus
 - `mergeable`が`CONFLICTING`の場合、force pushで上書きせず、mainを取り込んでから
   コンフリクトを解消し、§4〜§9を再実行する（コンフリクト解消で意図せず他人の変更を消さない）
 - `gh pr checks <PR>`（または`--watch`）で`.github/workflows/ci.yml`の全job
-  （`shellcheck` / `skill-frontmatter` / `install-smoke-test`）がgreenであることを確認して
-  からmergeする。落ちているjobがある場合、原因を修正せずmergeしない
+  （`shellcheck` / `skill-frontmatter` / `install-list-sync` / `link-check` /
+  `install-smoke-test`）がgreenであることを確認してからmergeする。落ちているjobがある場合、
+  原因を修正せずmergeしない
 - 上記いずれも未実行のままmergeしない
 
 PR本文には次を記載する。
