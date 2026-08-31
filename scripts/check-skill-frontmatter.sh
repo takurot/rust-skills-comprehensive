@@ -40,6 +40,16 @@ for skill_md in "$SKILLS_DIR"/*/SKILL.md; do
     status=1
   fi
 
+  # description: is an unquoted YAML plain scalar, so a colon immediately
+  # followed by a space ends the value early no matter where it appears
+  # (backticks included) — this previously broke the harness's own
+  # frontmatter parser (docs/PLAN.md Status log, rust-pinning defect).
+  fm_desc="$(printf '%s\n' "$frontmatter" | sed -n 's/^description: *//p' | head -1)"
+  if [[ "$fm_desc" == *": "* ]]; then
+    echo "FAIL: $skill_md — description contains ': ' (colon+space), which truncates an unquoted YAML value — rewrite to avoid it (docs/WORKFLOW.md §4.2)"
+    status=1
+  fi
+
   lines="$(wc -l < "$skill_md" | tr -d ' ')"
   if (( lines > MAX_LINES )); then
     echo "FAIL: $skill_md — $lines lines exceeds the ${MAX_LINES}-line budget (docs/WORKFLOW.md §1)"

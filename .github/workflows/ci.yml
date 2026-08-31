@@ -7,12 +7,12 @@ on:
 
 jobs:
   shellcheck:
-    name: Shellcheck install.sh
+    name: Shellcheck install.sh and scripts/*.sh
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run shellcheck (warning severity — see docs/WORKFLOW.md §5)
-        run: shellcheck --severity=warning install.sh
+        run: shellcheck --severity=warning install.sh scripts/*.sh
 
   skill-frontmatter:
     name: Skill frontmatter and line budget
@@ -21,6 +21,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check SKILL.md frontmatter and line budget
         run: ./scripts/check-skill-frontmatter.sh
+
+  install-list-sync:
+    name: install.sh --list matches skills/
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check install.sh --list vs skills/ directories
+        run: ./scripts/check-install-list-sync.sh
+
+  link-check:
+    name: Skill/docs cross-reference links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check relative links and [[name]] references
+        run: ./scripts/check-links.sh
 
   install-smoke-test:
     name: install.sh smoke test
