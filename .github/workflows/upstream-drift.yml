@@ -1,0 +1,87 @@
+# Scheduled check for upstream google/comprehensive-rust changes under any skill's declared
+# source paths since this repo's pinned commit (docs/PLAN.md's Upstream pin). See issue #7 and
+# scripts/check-upstream-drift.sh for the detection logic and why this uses the GitHub compare
+# API instead of cloning ref/comprehensive-rust (gitignored, not present in CI).
+#
+# On drift, opens (or comments on an existing open) an Issue labeled `upstream-drift` — this is
+# a notification mechanism, not an auto-fix: re-pinning and updating skill content stays a
+# manual Draft/Validate/Refine cycle per docs/WORKFLOW.md §4.
+
+name: Upstream drift check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Monday 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-drift:
+    name: Check upstream comprehensive-rust for drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run upstream drift check
+        id: drift
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          output="$(./scripts/check-upstream-drift.sh)"
+          echo "$output"
+          # Random delimiter: $output embeds upstream file paths (google/comprehensive-rust,
+          # via scripts/check-upstream-drift.sh) — a fixed delimiter could in principle collide
+          # with a literal path segment and corrupt GITHUB_OUTPUT parsing.
+          delim="DRIFT_EOF_$(date +%s)_$RANDOM"
+          {
+            echo "result<<$delim"
+            echo "$output"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
+          if echo "$output" | grep -q '^DRIFT:'; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ensure upstream-drift label exists
+        if: steps.drift.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create upstream-drift \
+            --color FBCA04 \
+            --description "Opened by .github/workflows/upstream-drift.yml" \
+            --force
+
+      - name: Open or update drift issue
+        if: steps.drift.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRIFT_RESULT: ${{ steps.drift.outputs.result }}
+        run: |
+          set -euo pipefail
+          body="Automated check (\`.github/workflows/upstream-drift.yml\`, \`scripts/check-upstream-drift.sh\`) found upstream changes on [google/comprehensive-rust](https://github.com/google/comprehensive-rust) under one or more skills' declared source paths, since this repo's pinned commit (\`docs/PLAN.md\`'s Upstream pin).
+
+          \`\`\`
+          $DRIFT_RESULT
+          \`\`\`
+
+          Next steps: see \`docs/WORKFLOW.md\` §3.3 (re-cloning \`ref/comprehensive-rust\` at the new commit) and §4 (Draft/Validate/Refine) for updating the affected skill(s), then bump the \`source:\` pin per §8.
+
+          This issue is reopened or commented on again by the next scheduled run if the drift is still present — closing it without updating the affected skill(s) doesn't stop that."
+
+          existing="$(gh issue list --label upstream-drift --state open --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create \
+              --title "Upstream comprehensive-rust drift detected" \
+              --body "$body" \
+              --label upstream-drift
+          fi

@@ -225,6 +225,7 @@ PASSとして報告しない。
 | --- | --- |
 | skillの追加・削除 | README（skill表・repository layout）、`docs/PLAN.md`（Skill catalog・Status） |
 | skillの`source:`pin更新 | 同じskillの他の記述箇所、必要なら`docs/PLAN.md`のUpstream pin |
+| skillの`source:`Paths変更 | `scripts/check-upstream-drift.sh`内のskill→pathマッピング（§11） |
 | skill間のdelineation変更 | `docs/PLAN.md`のdelineation table、影響するskillの相互参照 |
 | `install.sh`の挙動変更 | README（Install節）、`.github/workflows/ci.yml`のsmoke test手順 |
 | upstream courseの構造変化 | `docs/FILE_MAP.md` |
@@ -320,3 +321,22 @@ skill/docsの変更はmerge前に内容と配布経路の両面でレビュー�
 
 ファイル構成は変化するため、この文書に静的tree snapshotは置かない。確認時は
 `git ls-files`と`docs/PLAN.md`を正とする。
+
+## 11. 上流ドリフト検知（scheduled）
+
+`.github/workflows/upstream-drift.yml`（毎週月曜09:00 UTC + 手動`workflow_dispatch`）が
+`scripts/check-upstream-drift.sh`を実行し、各skillの`source:`frontmatterが指すupstream path
+配下に、`docs/PLAN.md`のUpstream pin以降の変更がないかを検査する。`ref/comprehensive-rust`の
+ローカルcloneには依存せず（gitignore対象でCIに存在しない、§3.3・§6参照）、GitHubの
+compare API（`gh api repos/google/comprehensive-rust/compare/<pin>...main`）で差分を検出する
+——56MBのfull cloneをCIで行うコストを避けるため。
+
+差分が見つかった場合、`upstream-drift`ラベル付きのIssueを新規作成（既存のopen issueがあれば
+コメント追記）する。これは通知のみで自動修正は行わない——影響を受けたskillの更新は通常どおり
+§4のDraft/Validate/Refineサイクルと§8のpin更新に従う。
+
+`scripts/check-upstream-drift.sh`内のskill→upstream path prefixマッピングは、各skillの
+`source:`frontmatterのPathsから手動で保守する（bash 3.2互換のため連想配列ではなくフラット
+リスト）。skillの`source:`Pathsを変更した場合はこのマッピングも同期させる（§8参照）。
+このworkflowは`.github/workflows/ci.yml`のPR gateとは独立しており、§9.2のCI job一覧には
+含まれない。

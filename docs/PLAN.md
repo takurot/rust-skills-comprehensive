@@ -103,6 +103,16 @@ conversion mechanics (why `#[from]`/cross-error-type `?` works at all, which `ru
 own `thiserror` example relies on without explaining). Both are documented as small
 recommended edits for whoever maintains the `rust-patterns` repo, not applied here.
 
+**Upstream drift detection (2026-09-01, issue #7)**: added `scripts/check-upstream-drift.sh` —
+detects whether any file under a skill's declared `source:` paths changed on
+`google/comprehensive-rust`'s default branch since this repo's pinned commit, via the GitHub
+compare API (`gh api repos/google/comprehensive-rust/compare/<pin>...main`) rather than a
+local `ref/comprehensive-rust` clone (gitignored, absent in CI). Ran it locally: clean against
+the current pin (no drift), and verified the DRIFT-reporting path fires correctly against a
+deliberately older test commit. `.github/workflows/upstream-drift.yml` runs it weekly (Monday
+09:00 UTC) plus on `workflow_dispatch`, and opens/comments on an `upstream-drift`-labeled Issue
+when drift is found — notification only, not an auto-fix. See `docs/WORKFLOW.md` §11.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription
