@@ -1,8 +1,10 @@
 // markdownlint-cli2 config for this repo.
 //
-// Scope: skills/, docs/, README.md (see .github/workflows/ci.yml for the exact globs run
-// in CI). ref/comprehensive-rust/ is gitignored, vendored upstream content and is never
-// linted here.
+// Scope: skills/, docs/, README.md, CONTRIBUTING.md (see .github/workflows/ci.yml for the
+// exact globs run in CI). CONTRIBUTING.md was added in issue #27 — it's an original document
+// of this repo's own, same as README.md, with no reason to be exempt from the same minimal
+// formatting bar. ref/comprehensive-rust/ is gitignored, vendored upstream content and is
+// never linted here.
 //
 // Rule selection is deliberately narrow — this is a content repo whose prose is adapted
 // from an external, CC-BY-4.0 upstream course, so we don't want a full default ruleset
@@ -27,6 +29,6 @@
     "MD041": false, // off: SKILL.md files start with YAML frontmatter, not an H1
     "MD047": true // files end with a single trailing newline
   },
-  "globs": ["skills/**/*.md", "docs/**/*.md", "README.md"],
+  "globs": ["skills/**/*.md", "docs/**/*.md", "README.md", "CONTRIBUTING.md"],
   "ignores": ["ref/**"]
 }

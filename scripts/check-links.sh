@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Verify cross-references stay valid across skills/*/SKILL.md (and any
-# skills/*/references/*.md), README.md, and docs/*.md:
+# skills/*/references/*.md), README.md, CONTRIBUTING.md, and docs/**/*.md
+# (recursively, including docs/eval/**):
 #   - relative Markdown links `[text](target)` resolve to an existing file
 #     or directory (relative to the linking file); external links
 #     (http(s)://, mailto:) and pure in-page anchors (#foo) are skipped,
@@ -61,10 +62,14 @@ while IFS= read -r -d '' file; do
 done < <(find "$REPO_DIR/skills" -name '*.md' -print0)
 
 check_file "$REPO_DIR/README.md"
+check_file "$REPO_DIR/CONTRIBUTING.md"
 
+# Recursive, not -maxdepth 1 — docs/eval/README.md and docs/eval/results/*.md
+# were previously skipped here (issue #27), even though markdownlint's
+# docs/**/*.md glob already covers them.
 while IFS= read -r -d '' file; do
   check_file "$file"
-done < <(find "$REPO_DIR/docs" -maxdepth 1 -name '*.md' -print0)
+done < <(find "$REPO_DIR/docs" -name '*.md' -print0)
 
 if [[ $status -eq 0 ]]; then
   echo "OK: no broken relative links or [[name]] references found"
