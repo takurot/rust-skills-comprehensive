@@ -128,7 +128,8 @@ rust-skills-comprehensive/
 ├── CLAUDE.md                # repo-specific behavioral guidelines for Claude Code
 ├── CONTRIBUTING.md          # skill-authoring process, pre-PR checks, commit/PR conventions
 ├── .markdownlint-cli2.jsonc # markdownlint config used by CI and local checks
-├── LICENSE-CODE             # Apache-2.0 — covers the Rust code samples inside each skill
+├── LICENSE-CODE             # Apache-2.0 — covers code samples in skills, and this repo's own
+│                             #  scripts/docs (see Attribution & license below)
 ├── LICENSE-CONTENT          # CC-BY-4.0 — covers the prose, adapted from the course
 └── ref/                     # (gitignored) local clone of the upstream course, used only
                               #  while authoring/updating skills — not part of this distribution
@@ -140,11 +141,19 @@ platform-specific tracks), and what's still open.
 
 ## Attribution & license
 
-The skills' prose is adapted from [Comprehensive Rust](https://google.github.io/comprehensive-rust/)
-by Google LLC, licensed [CC-BY-4.0](LICENSE-CONTENT) — see that file for the full license.
-Rust code samples in the original course (and reproduced or adapted in these skills) are
-licensed [Apache-2.0](LICENSE-CODE). Each `SKILL.md`'s frontmatter names the exact upstream
-paths it draws from and the pinned commit.
+This repository's contents fall into two categories with different licenses:
+
+- **Skill content derived from Comprehensive Rust** (`skills/**/SKILL.md`): the prose is
+  adapted from [Comprehensive Rust](https://google.github.io/comprehensive-rust/) by Google
+  LLC, licensed [CC-BY-4.0](LICENSE-CONTENT) — see that file for the full license. Rust code
+  samples in the original course (and reproduced or adapted in these skills) are licensed
+  [Apache-2.0](LICENSE-CODE). Each `SKILL.md`'s frontmatter names the exact upstream paths it
+  draws from and the pinned commit.
+- **Everything else original to this repository** — `install.sh`, `scripts/*.sh`,
+  `.github/workflows/*.yml`, and the docs in `docs/*.md` (`PLAN.md`, `WORKFLOW.md`,
+  `FILE_MAP.md`, `FEEDBACK.md`, `eval/`, etc.), plus `CONTRIBUTING.md` and `CLAUDE.md` — is not
+  derived from the upstream course and is licensed [Apache-2.0](LICENSE-CODE) — the same
+  `LICENSE-CODE` file, since its Apache-2.0 text isn't scoped to any single work.
 
 If you edit or extend a skill here in a way that still derives from the course text, keep the
 attribution note in that skill's frontmatter and this README's license section accurate.
