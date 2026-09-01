@@ -51,7 +51,12 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --dest)
-            if [[ $# -lt 2 ]]; then
+            # Reject a missing argument *and* the next token being another
+            # flag (e.g. `--dest --force`) — both used to fall through to
+            # PROJECT_DIR="$2" and fail later with a raw, confusing error
+            # (an unbound-variable crash, or `mkdir: illegal option --`)
+            # instead of this script's own usage message (issue #25 review).
+            if [[ $# -lt 2 || "$2" == -* ]]; then
                 echo "error: --dest requires a path argument" >&2
                 usage
                 exit 1
