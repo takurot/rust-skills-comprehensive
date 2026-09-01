@@ -166,6 +166,26 @@ Verification for all six: `git diff --check`, `./scripts/check-skill-frontmatter
 technical-reference freshness, scope fit) for these six specific skills: all **Keep** — each
 change is a narrow accuracy correction with no scope, delineation, or overlap impact.
 
+**Security fix: install.sh path traversal (2026-09-01, issue #44)**: `install.sh` built
+`src`/`target` paths by directly concatenating `$SKILLS_SRC`/`$DEST` with each positional skill
+name, with no validation. A name containing `..` could make either path resolve outside its
+intended root; combined with `--force`'s `rm -rf "$target"`, this allowed deleting an arbitrary
+directory the process could write to. A literal single `..` segment happens to be blocked by
+`rm`'s own "refusing to remove '.' or '..'" guard (confirmed on the real system: `./install.sh
+--global --force ..` exits 0 but the `rm` itself fails) — but a longer traversal whose final
+path segment isn't literally `..` (e.g. enough leading `../` to overshoot the filesystem root,
+followed by an arbitrary absolute path) bypasses that guard entirely. Reproduced destructively
+in a throwaway sandbox (outside the repo, cleaned up after): built a minimal reproduction of
+`install.sh`'s exact src/target/rm logic pointed at sandboxed `SKILLS_SRC`/`DEST`, and confirmed
+an unrelated sandbox directory was actually deleted by the unpatched logic. Fixed by rejecting
+any skill name that is empty, `.`, `..`, or contains `/` before `src`/`target` are built (a
+`case` guard at the top of the install loop, reusing the existing `not_found`-counter exit-code
+path from issue #25 rather than adding a new early-exit branch). Re-ran the same sandboxed
+reproduction against the patched script: the traversal name is now rejected up front and the
+sandbox victim directory survives. Added a CI regression step to `install-smoke-test`
+(`.github/workflows/ci.yml`) that asserts `..`, `../../etc`, `a/b`, and `.` are all rejected
+(non-zero exit) and that a canary file outside the install dest survives every attempt.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription

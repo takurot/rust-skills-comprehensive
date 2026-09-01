@@ -69,3 +69,17 @@ jobs:
         run: ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
       - name: installed file is present and non-empty
         run: test -s /tmp/rsc-install-test/.claude/skills/rust-api-design/SKILL.md
+      - name: reject path-traversal skill names (issue #44)
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rsc-traversal-canary
+          touch /tmp/rsc-traversal-canary/marker
+          for bad_name in ".." "../../etc" "a/b" "."; do
+            if ./install.sh --dest /tmp/rsc-traversal-test --force "$bad_name"; then
+              echo "expected non-zero exit for skill name: $bad_name" >&2
+              exit 1
+            fi
+          done
+          # The canary must survive every attempt above — a regression here means a
+          # traversal name reached rm -rf instead of being rejected up front.
+          test -f /tmp/rsc-traversal-canary/marker
