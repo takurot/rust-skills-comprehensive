@@ -52,7 +52,7 @@ code solution — several `idiomatic/**` exercises are the latter and are exclud
 |---|---|---|---|
 | `rust-ownership-and-lifetimes` | `borrowing/exercise.md` ("Wizard's Inventory") | standalone: `exercise.rs` has `// ANCHOR: setup/main/tests`, `solution.md` includes `// ANCHOR: solution` (the whole file) | **Run** — see `results/2026-09-01-pilot.md` |
 | `rust-ownership-and-lifetimes` | `lifetimes/exercise.md` ("Protobuf Parsing") | standalone, same ANCHOR structure, larger (~200 lines) | **Run** — see `results/2026-09-01-pilot.md` |
-| `rust-unsafe-fundamentals` | `unsafe-rust/exercise.md` ("Safe FFI Wrapper") | standalone, but the *content* is FFI (`CStr`/`OsStr`, wrapping `libc` calls) more than "everyday unsafe" — a good candidate to run with **both** `rust-unsafe-fundamentals` and `rust-ffi` loaded together next time; needs the `libc` crate as a dev-dependency | Mapped, not yet run — see Limitations |
+| `rust-unsafe-fundamentals` | `unsafe-rust/exercise.md` ("Safe FFI Wrapper") | standalone (its `Cargo.toml` already declares everything it needs — `tempfile` as a dev-dependency, no `libc` crate involved; the C bindings are hand-declared via `unsafe extern "C"`, with `#[cfg(target_os = "macos")]` branches already present), but the *content* is FFI (`CStr`/`OsStr`, wrapping raw `opendir`/`readdir`/`closedir` calls) more than "everyday unsafe" — a good candidate to run with **both** `rust-unsafe-fundamentals` and `rust-ffi` loaded together next time | Mapped, not yet run — see Limitations |
 | `rust-concurrency-sync` | `concurrency/sync-exercises/{dining-philosophers,link-checker}.md` | prompt page + starter `.rs` + shared `solutions.md` (multiple solutions in one file, `## Dining Philosophers` / `## Link Checker` headings) | Mapped, not yet run |
 | `rust-async` | `concurrency/async-exercises/{dining-philosophers,chat-app}.md` | same shared-`solutions.md` shape as above (`## Dining Philosophers — Async` / `## Broadcast Chat Application`) | Mapped, not yet run |
 | `rust-api-design` | `idiomatic/foundations-api-design/**/exercise.md` | class-discussion prompt (fill-in-the-blank naming, "ask the class" narrative) — **no code solution to compare against** | **Excluded** — not this eval's shape |
@@ -81,10 +81,13 @@ exercise wasn't run to completion>
 ## Limitations of this pass
 
 - Only 2 of the mapped exercises were actually run end-to-end (compiled + tested) in the pilot;
-  the rest are mapped but deferred (`unsafe-rust/exercise.md` needs a `libc` dev-dependency and
-  network-independent verification of directory-listing behavior; the `concurrency/*`
-  exercises need the shared-`solutions.md` file split per-exercise before they fit the
-  Assemble step cleanly — worth a follow-up rather than blocking this issue).
+  the rest are mapped but deferred (`unsafe-rust/exercise.md` doesn't need any extra
+  dependency — its `Cargo.toml` already has what the exercise needs — it was left out of this
+  pilot purely for time: assembling its larger skeleton, and deciding whether to run it with
+  one skill or both `rust-unsafe-fundamentals` and `rust-ffi` loaded together, is more setup
+  than the other two; the `concurrency/*` exercises need the shared-`solutions.md` file split
+  per-exercise before they fit the Assemble step cleanly — worth a follow-up rather than
+  blocking this issue).
 - This eval only covers skills whose upstream chapter shipped a self-contained coding
   exercise. Most of this skill set's advanced-topic skills (typestate, pinning, unsafe
   soundness, FFI, newtype/RAII, polymorphism) come from `idiomatic/leveraging-the-type-system`,

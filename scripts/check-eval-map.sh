@@ -21,6 +21,11 @@ if [[ ! -d "$REF_DIR" ]]; then
   exit 0
 fi
 
+if [[ ! -f "$MAP_FILE" ]]; then
+  echo "FAIL: $MAP_FILE not found" >&2
+  exit 1
+fi
+
 status=0
 
 # Pull every backtick-quoted path fragment that looks like an upstream exercise/solution
