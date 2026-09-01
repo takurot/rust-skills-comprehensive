@@ -39,10 +39,10 @@ and not shipped; consumers who need to re-derive a skill from source should clon
 themselves at the pinned commit. `LICENSE-CODE` (Apache-2.0) and `LICENSE-CONTENT` (CC-BY-4.0)
 vendor the upstream course's two license texts at the repo root.
 
-**Not yet done**: Phase 4 (routing block in `rust-patterns`, Day 1–2 gap-fill), Phase 5
-(platform skills — still gated on user confirmation). Exercise-based eval against the course's
-own exercises/solutions is now piloted for 2 exercises — see the entry below and
-`docs/eval/README.md` — with several mapped exercises still deferred to a follow-up.
+**Not yet done**: Phase 5 (platform skills — still gated on user confirmation). Exercise-based
+eval against the course's own exercises/solutions is now piloted for 2 exercises — see the
+entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
+follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
 **CI hardening (2026-08-31, issues #1–#3)**: closed a real gap in `skill-frontmatter` —
 the script checked presence of frontmatter keys but never caught the actual `rust-pinning`
@@ -90,6 +90,18 @@ per-exercise before they fit the Assemble step). Not wired into `.github/workflo
 an LLM-driven solve/judge step doesn't fit the deterministic jobs there;
 `scripts/check-eval-map.sh` is a local-only sanity check that the mapping's literal upstream
 paths still exist, not a CI job.
+
+**Phase 4 (2026-09-01, issue #9)**: `rust-patterns` is not part of this repo — it lives in a
+separate repo (`everything-claude-code`) — so this repo's deliverable is the routing-block
+text and gap-check findings, not a direct edit to that skill; see
+`docs/rust-patterns-routing-block.md`. Checked every Day 1–2 topic in `docs/FILE_MAP.md`'s
+Core Language section against `rust-patterns/SKILL.md` (read in full) and the relevant
+upstream page: confirmed the `thiserror`/`anyhow` boundary is already covered correctly (the
+"verify before touching" item from this section's earlier note), and found 2 genuine gaps —
+`let else` (no example anywhere in `rust-patterns`) and the `?` operator's `From::from`
+conversion mechanics (why `#[from]`/cross-error-type `?` works at all, which `rust-patterns`'
+own `thiserror` example relies on without explaining). Both are documented as small
+recommended edits for whoever maintains the `rust-patterns` repo, not applied here.
 
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
@@ -152,7 +164,9 @@ when that idiom **is** the task. If a new skill can't say materially more than t
 | calling C/C++ from Rust or vice versa | `rust-ffi` |
 
 Deliverable of Phase 4: add a short "see also" routing block to `rust-patterns` itself so it
-hands off rather than competing.
+hands off rather than competing. Done as of issue #9 — see
+[`docs/rust-patterns-routing-block.md`](rust-patterns-routing-block.md) (this repo produces
+the block; applying it lives in the `rust-patterns` repo, which this repo doesn't own).
 
 ## Module weights (course minutes)
 
@@ -257,10 +271,16 @@ useful outside Android/Chromium.
 
 ### Phase 4 — integration & gap-fill
 
+**Done (issue #9)** — see [`docs/rust-patterns-routing-block.md`](rust-patterns-routing-block.md)
+for the routing-block text and full gap-check table.
+
 - Add the "see also" routing block to `rust-patterns`.
 - Gap-check Day 1–2 content against `rust-patterns`; backfill only genuine gaps as small edits
   (candidates found in the map: `let-else`, try-conversions / `?` conversion mechanics,
   `thiserror` vs `anyhow` boundary — the last is already covered, verify before touching).
+  Confirmed: both `let-else` and try-conversions are genuine gaps, `thiserror`/`anyhow` is
+  already correctly covered. Since `rust-patterns` isn't part of this repo, backfilling is
+  recommended to whoever maintains it rather than applied here.
 - `rust-testing` verified adequate against the course's `testing/*` (unit, integration, doc tests,
   proptest, mockall, criterion, llvm-cov, CI all present). **No change planned.** Optional:
   clippy/lint guidance from `testing/lints.md` if not already in `rust-patterns`' tooling section.
