@@ -113,6 +113,7 @@ rust-skills-comprehensive/
 ├── docs/
 │   ├── PLAN.md              # skill catalog design, module sizing, build order, status log
 │   └── FILE_MAP.md          # map of the upstream course's ~450 source pages by topic
+├── CONTRIBUTING.md          # skill-authoring process, pre-PR checks, commit/PR conventions
 ├── LICENSE-CODE             # Apache-2.0 — covers the Rust code samples inside each skill
 ├── LICENSE-CONTENT          # CC-BY-4.0 — covers the prose, adapted from the course
 └── ref/                     # (gitignored) local clone of the upstream course, used only
@@ -150,3 +151,6 @@ Issues and PRs welcome — in particular:
 - Gaps found in real use (a symptom/error message the diagnosis tables don't cover).
 - The Phase 4/5 work noted as open in `docs/PLAN.md` (platform-specific skills for bare-metal,
   Android, or Chromium Rust — currently out of scope unless there's demand).
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the skill-authoring process, the local checks to
+run before opening a PR, and commit/PR conventions.
