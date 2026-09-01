@@ -35,9 +35,14 @@ its frontmatter.
 Requires `bash` (macOS's default 3.2 works fine) and a clone of this repo.
 
 ```bash
-git clone https://github.com/<you>/rust-skills-comprehensive.git
+git clone https://github.com/takurot/rust-skills-comprehensive.git
 cd rust-skills-comprehensive
 ```
+
+If you forked the repo, replace `takurot` with your GitHub username. `git clone` names the
+local directory after the repo (`rust-skills-comprehensive`) unless you pass a different name
+as a third argument or the clone was renamed afterward — adjust the `cd` above to match
+whatever directory you actually end up with.
 
 ### Everything, into the current project
 
@@ -110,10 +115,19 @@ rust-skills-comprehensive/
 │   └── <skill-name>/
 │       └── SKILL.md
 ├── .claude/skills/          # this repo's own dogfooding install (symlinks into ../../skills/)
+├── scripts/                 # pre-PR check scripts (frontmatter, install-list sync, links,
+│                             #  upstream drift, eval-map) — see docs/WORKFLOW.md §7
+├── .github/workflows/       # CI (lint/check/smoke-test) and scheduled upstream-drift detection
 ├── docs/
-│   ├── PLAN.md              # skill catalog design, module sizing, build order, status log
-│   └── FILE_MAP.md          # map of the upstream course's ~450 source pages by topic
+│   ├── PLAN.md                       # skill catalog design, module sizing, build order, status log
+│   ├── FILE_MAP.md                   # map of the upstream course's ~450 source pages by topic
+│   ├── WORKFLOW.md                   # end-to-end dev workflow (branching, Draft/Validate/Refine, PR gate)
+│   ├── FEEDBACK.md                   # accumulated review feedback and open follow-ups
+│   ├── rust-patterns-routing-block.md
+│   └── eval/                         # manual eval runs and results
+├── CLAUDE.md                # repo-specific behavioral guidelines for Claude Code
 ├── CONTRIBUTING.md          # skill-authoring process, pre-PR checks, commit/PR conventions
+├── .markdownlint-cli2.jsonc # markdownlint config used by CI and local checks
 ├── LICENSE-CODE             # Apache-2.0 — covers the Rust code samples inside each skill
 ├── LICENSE-CONTENT          # CC-BY-4.0 — covers the prose, adapted from the course
 └── ref/                     # (gitignored) local clone of the upstream course, used only
