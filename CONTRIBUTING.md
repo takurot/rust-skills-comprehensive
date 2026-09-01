@@ -92,3 +92,11 @@ Before merging:
 
 [`docs/WORKFLOW.md` §10](docs/WORKFLOW.md#10-レビューと完了条件) has the full completion
 checklist a change must satisfy before it's considered done.
+
+## Feedback from using a skill
+
+Used one of these skills in a real session and it helped (or didn't)? That's worth recording
+even without a PR — see [`docs/FEEDBACK.md`](docs/FEEDBACK.md) for the format. It's the
+lowest-friction way to surface a gap `/skill-stocktake` and `docs/eval/`'s exercise-based check
+can't catch on their own (both check the skill in the abstract, not what actually happened when
+someone used it).
