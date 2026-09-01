@@ -10,3 +10,7 @@ ref/comprehensive-rust/
 
 # Serena MCP local project state
 .serena/
+
+# Scratch directory for local, non-repo working files (tool scan logs, drafts from other
+# projects, etc.) — never intended for this distribution; see issue #32.
+temp/
