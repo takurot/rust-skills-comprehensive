@@ -127,6 +127,19 @@ installed=0
 skipped=0
 not_found=0
 for name in "${SELECTED[@]}"; do
+    # Reject anything that isn't a plain directory name *before* it's used to build src/target
+    # below — a name containing '/' or '..' can walk src/target outside SKILLS_SRC/DEST
+    # entirely (arbitrary-path `rm -rf` under --force, since neither rm nor cp validates
+    # containment; a single ".." segment is blocked by rm's own "refusing to remove '.' or
+    # '..'" guard, but a longer traversal isn't — issue #44).
+    case "$name" in
+        ''|.|..|*/*)
+            echo "  ✗ $name — invalid skill name (must be a plain directory name: no '/', '.', or '..')" >&2
+            not_found=$((not_found + 1))
+            continue
+            ;;
+    esac
+
     src="$SKILLS_SRC/$name"
     if [[ ! -d "$src" ]]; then
         echo "  ✗ $name — no such skill in $SKILLS_SRC (see --list)" >&2

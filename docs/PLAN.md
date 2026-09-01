@@ -166,6 +166,39 @@ Verification for all six: `git diff --check`, `./scripts/check-skill-frontmatter
 technical-reference freshness, scope fit) for these six specific skills: all **Keep** — each
 change is a narrow accuracy correction with no scope, delineation, or overlap impact.
 
+**Security fix: install.sh path traversal (2026-09-01, issue #44)**: `install.sh` built
+`src`/`target` paths by directly concatenating `$SKILLS_SRC`/`$DEST` with each positional skill
+name, with no validation. A name containing `..` could make either path resolve outside its
+intended root; combined with `--force`'s `rm -rf "$target"`, this allowed deleting an arbitrary
+directory the process could write to. A literal single `..` segment happens to be blocked by
+`rm`'s own "refusing to remove '.' or '..'" guard (confirmed on the real system: `./install.sh
+--global --force ..` exits 0 but the `rm` itself fails) — but a longer traversal whose final
+path segment isn't literally `..` (e.g. enough leading `../` to overshoot the filesystem root,
+followed by an arbitrary absolute path) bypasses that guard entirely. Reproduced destructively
+in a throwaway sandbox (outside the repo, cleaned up after): built a minimal reproduction of
+`install.sh`'s exact src/target/rm logic pointed at sandboxed `SKILLS_SRC`/`DEST`, and confirmed
+an unrelated sandbox directory was actually deleted by the unpatched logic. Fixed by rejecting
+any skill name that is empty, `.`, `..`, or contains `/` before `src`/`target` are built (a
+`case` guard at the top of the install loop, reusing the existing `not_found`-counter exit-code
+path from issue #25 rather than adding a new early-exit branch). Re-ran the same sandboxed
+reproduction against the patched script: the traversal name is now rejected up front and the
+sandbox victim directory survives. Added a CI regression step to `install-smoke-test`
+(`.github/workflows/ci.yml`) that asserts `..`, `../../etc`, `a/b`, and `.` are all rejected
+(non-zero exit) and that a canary file outside the install dest survives every attempt.
+
+**PR #51 code review (docs/WORKFLOW.md §9.1) caught a real gap in that CI step**: a bare
+non-zero-exit assertion for those four specific names doesn't actually exercise the new guard —
+`..` and `.` are independently blocked by `rm`'s own `.`/`..` refusal, and `../../etc`/`a/b`
+independently fail the pre-existing "no such skill" check (`[[ ! -d "$src" ]]`) at the shallow
+`--dest /tmp/rsc-traversal-test` depth the test used, since neither resolves to a real
+directory there. The test would have stayed green even with the new `case` guard fully removed.
+Fixed by asserting the guard's own `"invalid skill name"` message appears in the output, not
+just a non-zero exit code. Verified the fix to the test itself two ways: (1) ran it against the
+patched `install.sh` — passes; (2) surgically removed the `case` guard from a scratch copy of
+`install.sh` (restored from a backup immediately after), re-ran the same four-name loop in
+place — every name now correctly fails the "guard message absent" assertion, proving the
+strengthened test actually catches the guard being reverted.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription
