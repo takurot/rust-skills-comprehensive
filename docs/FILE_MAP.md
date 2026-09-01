@@ -7,12 +7,14 @@ driven by `SUMMARY.md` (the mdBook table of contents — treat it as the authori
 Legend: 📄 file count in subtree · each section lists its own `SUMMARY.md` anchor file first.
 
 ## 0. Front matter / meta
+
 - `index.md`, `README.md`, `running-the-course.md` (+`course-structure.md`, `keyboard-shortcuts.md`, `translations.md`)
 - `cargo.md` (+`rust-ecosystem.md`, `code-samples.md`, `running-locally.md`)
 - `thanks.md`, `glossary.md`, `other-resources.md`, `credits.md`
 - `welcome-day-{1,2,3,4}.md`, `welcome-day-{1,2,3,4}-afternoon.md` — day dividers, mostly agenda text, low reuse value for skills.
 
 ## 1. Core Language — Day 1–2 (📄 ~100 files)
+
 Fundamentals that almost every Rust skill will want to reference.
 
 | Topic | Anchor | Children |
@@ -40,6 +42,7 @@ Fundamentals that almost every Rust skill will want to reference.
 | Unsafe Rust (intro-level) | `unsafe-rust.md` | `unsafe-rust/{unsafe,dereferencing,mutable-static,unions,unsafe-traits,exercise,solution}.md`, `unsafe-functions.md`+`unsafe-functions/{rust,extern-c,calling}.md` |
 
 ## 2. Concurrency — Day-length module (📄 43 files)
+
 - `concurrency/welcome.md`, `welcome-async.md`
 - Threads: `threads.md` + `threads/{plain,scoped}.md`
 - Channels: `channels.md` + `channels/{senders-receivers,unbounded,bounded}.md`
@@ -52,6 +55,7 @@ Fundamentals that almost every Rust skill will want to reference.
 - Async exercises: `async-exercises.md` + `async-exercises/{afternoon,dining-philosophers,chat-app,solutions}.md`
 
 ## 3. Idiomatic Rust — largest single module (📄 109 files)
+
 - `idiomatic/welcome.md`
 - **Foundations of API Design** `idiomatic/foundations-api-design.md`
   - Meaningful Doc Comments: `meaningful-doc-comments.md` + 7 sub-pages (who-are-you-writing-for, library-vs-application-docs, anatomy-of-a-doc-comment, name-drop-signpost, avoid-redundancy, what-isnt-docs, what-why-not-how-where, exercise)
@@ -65,6 +69,7 @@ Fundamentals that almost every Rust skill will want to reference.
   - From OOP to Rust (+15: inheritance, why-no-inheritance, switch-perspective, supertraits, composition, dynamic-dispatch/{dyn-trait,dyn-compatible,dyn-vs-generics,limits,heterogeneous,any-trait,pitfalls}, sealed-traits, sealing-with-enums, sticking-with-traits, problem-solving)
 
 ## 4. Unsafe Deep Dive — advanced module (📄 83 files)
+
 - `unsafe-deep-dive/{welcome,setup}.md`
 - Introduction (+15: definition, purpose, two-roles, warm-up/*, characteristics-of-unsafe-rust/*, responsibility-shift, impact-on-workflow, may_overflow)
 - Safety Preconditions (+8: common-preconditions, getter, semantic-preconditions, u8-to-bool, determining, references, defining, ascii)
@@ -75,14 +80,17 @@ Fundamentals that almost every Rust skill will want to reference.
 - FFI (+15, overlaps with §5): language-interop, strategies, type-safety, language-differences/*, abs, rand, c-library-example, cpp-library-example
 
 ## 5. Platform / Interop modules (own tracks, not part of the 4-day core)
+
 - **Android** (📄 48): setup, build-rules (binary/library), AIDL (birthday-service tutorial + 8 sub-steps, types + 5 sub-types), testing (googletest, mocking), logging, interoperability with C (+5), C++ (+13 incl. cxx bridge/genrules), Java.
 - **Chromium** (📄 30): setup, cargo-vs-chromium, policy, build-rules (+unsafe, depending, vscode, exercise), testing (+rust_gtest_interop, build-gn, import-macro, exercise), interoperability-with-cpp (+example-bindings, limitations-of-cxx, error-handling + qr/png examples, using-cxx-in-chromium, exercise), adding-third-party-crates (+11 sub-pages), bringing-it-together, solutions.
 - **Bare Metal** (📄 41): no_std (+minimal, alloc), microcontrollers (+mmio, pacs, hals, board-support, type-state, embedded-hal, probe-rs+debugging, other-projects), Application Processors `aps.md` (+entry-point, inline-assembly, mmio, uart+traits/using, better-uart+bitflags/registers/driver, safemmio/*, logging+using, exceptions, aarch64-rt+exceptions, other-projects), useful-crates (zerocopy, aarch64-paging, buddy_system_allocator, tinyvec, spin), android bare-metal (vmbase), exercises (morning/afternoon + compass/rtc + solutions).
 
 ## 6. Exercises (📄 12, cross-cutting)
+
 `exercises/bare-metal/*` and `exercises/chromium/*` hold exercise prompts + solutions that live outside their module's own directory — cross-reference when building any "exercises" skill.
 
 ## Rough size ranking (for prioritization)
+
 1. Idiomatic Rust — 109 files (deepest, most skill-worthy content: API design, type-system tricks, polymorphism)
 2. Unsafe Deep Dive — 83 files (advanced, narrow audience, high value for a dedicated "advanced unsafe" skill)
 3. Core Language Day 1–2 — ~100 files across 20 small topics (foundational, likely already partly covered by the existing `rust-patterns`/`rust-testing` skills)

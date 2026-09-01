@@ -1,0 +1,32 @@
+// markdownlint-cli2 config for this repo.
+//
+// Scope: skills/, docs/, README.md (see .github/workflows/ci.yml for the exact globs run
+// in CI). ref/comprehensive-rust/ is gitignored, vendored upstream content and is never
+// linted here.
+//
+// Rule selection is deliberately narrow — this is a content repo whose prose is adapted
+// from an external, CC-BY-4.0 upstream course, so we don't want a full default ruleset
+// (line-length, etc.) forcing rewrites of upstream-derived wording. Per issue #4, the goal
+// is a minimal, mechanical quality bar: heading structure and fenced-code language tags.
+// See docs/WORKFLOW.md §7 for how this fits the rest of the quality gate.
+{
+  "config": {
+    "default": false,
+    "MD001": true, // heading levels increment by one
+    "MD003": { "style": "atx" }, // consistent ATX (`#`) heading style
+    "MD009": true, // no trailing spaces
+    "MD010": true, // no hard tabs
+    "MD018": true, // no missing space after `#` in ATX heading
+    "MD019": true, // no multiple spaces after `#` in ATX heading
+    "MD022": true, // headings surrounded by blank lines
+    "MD023": true, // headings start at the beginning of the line
+    "MD024": { "siblings_only": true }, // no duplicate heading text under the same parent
+    "MD025": true, // single top-level (H1) heading per file
+    "MD026": true, // no trailing punctuation in heading text
+    "MD040": true, // fenced code blocks must specify a language
+    "MD041": false, // off: SKILL.md files start with YAML frontmatter, not an H1
+    "MD047": true // files end with a single trailing newline
+  },
+  "globs": ["skills/**/*.md", "docs/**/*.md", "README.md"],
+  "ignores": ["ref/**"]
+}

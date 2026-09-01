@@ -103,7 +103,7 @@ rm -rf ~/.claude/skills/rust-api-design            # or under <project>/.claude/
 
 ## Repository layout
 
-```
+```text
 rust-skills-comprehensive/
 ├── install.sh              # installer (see above)
 ├── skills/                 # the 11 skills — canonical source, this is what install.sh copies from

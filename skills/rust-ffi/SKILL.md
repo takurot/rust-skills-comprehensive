@@ -21,7 +21,7 @@ other's functions directly — their type layouts, calling conventions, and runt
 don't agree. The practical path both directions go through is the **C ABI** as a lowest common
 denominator:
 
-```
+```text
 Rust  <----->  C ABI  <----->  C++
 ```
 
