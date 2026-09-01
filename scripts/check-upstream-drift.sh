@@ -78,6 +78,8 @@ rust-unsafe-soundness|src/unsafe-deep-dive/initialization
 rust-unsafe-soundness|src/unsafe-deep-dive/memory-lifecycle
 rust-pinning|src/unsafe-deep-dive/pinning
 rust-ffi|src/unsafe-deep-dive/ffi
+rust-ffi|src/android/interoperability/with-c
+rust-ffi|src/android/interoperability/cpp
 "
 
 changed_files="$(gh api "repos/$UPSTREAM_REPO/compare/${pin}...main" --paginate \

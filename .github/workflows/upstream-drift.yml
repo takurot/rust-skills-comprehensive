@@ -33,10 +33,14 @@ jobs:
           set -euo pipefail
           output="$(./scripts/check-upstream-drift.sh)"
           echo "$output"
+          # Random delimiter: $output embeds upstream file paths (google/comprehensive-rust,
+          # via scripts/check-upstream-drift.sh) — a fixed delimiter could in principle collide
+          # with a literal path segment and corrupt GITHUB_OUTPUT parsing.
+          delim="DRIFT_EOF_$(date +%s)_$RANDOM"
           {
-            echo "result<<DRIFT_EOF"
+            echo "result<<$delim"
             echo "$output"
-            echo "DRIFT_EOF"
+            echo "$delim"
           } >> "$GITHUB_OUTPUT"
           if echo "$output" | grep -q '^DRIFT:'; then
             echo "found=true" >> "$GITHUB_OUTPUT"
