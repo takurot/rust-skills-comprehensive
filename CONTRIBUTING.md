@@ -47,7 +47,7 @@ git diff --check                 # whitespace/newline issues
 ./scripts/check-install-list-sync.sh
 ./scripts/check-links.sh
 shellcheck --severity=warning install.sh scripts/*.sh
-npx --yes markdownlint-cli2 --config .markdownlint-cli2.jsonc "skills/**/*.md" "docs/**/*.md" "README.md"
+npx --yes markdownlint-cli2 --config .markdownlint-cli2.jsonc "skills/**/*.md" "docs/**/*.md" "README.md" "CONTRIBUTING.md"
 ```
 
 All of these also run in CI (`.github/workflows/ci.yml`:

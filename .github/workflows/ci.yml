@@ -50,6 +50,7 @@ jobs:
             skills/**/*.md
             docs/**/*.md
             README.md
+            CONTRIBUTING.md
 
   install-smoke-test:
     name: install.sh smoke test

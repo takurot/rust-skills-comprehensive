@@ -134,7 +134,7 @@ commitと異なる版を使う場合は、更新後にpinを書き換える（§
 | Trigger起動性 | そのskillが起動すべき/すべきでない代表的なpromptを数個想定し、`description`の語彙で自己判別できるか確認する（近縁skillとの誤起動がないか） |
 | Attribution | `source:`のCC-BY-4.0/Apache-2.0表記とpinned commitが正しい |
 | 重複回避 | `rust-patterns`や他skillの既存section と同じ結論しか出せない内容になっていないか |
-| リンク・相互参照 | `SKILL.md`/README/`docs/*.md`内の相対Markdownリンクと二重角括弧参照（例: `[[rust-pinning]]`）が実在するファイル/skillを指しているか。`./scripts/check-links.sh`（CIの`link-check` job）で機械的に確認できる。ただし本文中の裸のskill名の言及（例: `rust-patterns`のような本リポジトリ外のskillへの意図的な言及）はチェック対象外——存在しないskillへの裸の言及（例: 過去の`rust-bare-metal`未整合）は引き続き`/skill-stocktake`など手動確認に委ねる |
+| リンク・相互参照 | `SKILL.md`/README/CONTRIBUTING/`docs/**/*.md`（`docs/eval/**`含む、再帰的）内の相対Markdownリンクと二重角括弧参照（例: `[[rust-pinning]]`）が実在するファイル/skillを指しているか。`./scripts/check-links.sh`（CIの`link-check` job）で機械的に確認できる。ただし本文中の裸のskill名の言及（例: `rust-patterns`のような本リポジトリ外のskillへの意図的な言及）はチェック対象外——存在しないskillへの裸の言及（例: 過去の`rust-bare-metal`未整合）は引き続き`/skill-stocktake`など手動確認に委ねる |
 
 複数skillを変更した場合、または新skillを追加した場合は`/skill-stocktake`を該当skillに
 scopeして実行し、Keep/Fix/Dropの判定を`docs/PLAN.md`のStatusへ記録する。
@@ -195,7 +195,7 @@ git diff --check                 # 空白・改行の混在を検出
 ./scripts/check-install-list-sync.sh
 ./scripts/check-links.sh
 shellcheck --severity=warning install.sh scripts/*.sh
-npx --yes markdownlint-cli2 --config .markdownlint-cli2.jsonc "skills/**/*.md" "docs/**/*.md" "README.md"
+npx --yes markdownlint-cli2 --config .markdownlint-cli2.jsonc "skills/**/*.md" "docs/**/*.md" "README.md" "CONTRIBUTING.md"
 ```
 
 上記はすべて`.github/workflows/ci.yml`でpush/PR時に自動実行されるが、フィードバックを早く
