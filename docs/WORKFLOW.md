@@ -129,7 +129,7 @@ commitと異なる版を使う場合は、更新後にpinを書き換える（§
 
 | 確認項目 | 方法 |
 | --- | --- |
-| Frontmatter形式 | `name`・`description`・`source`が揃っている。`description:`は引用符なしのYAML plain scalarなので、値のどこであれ`: `（コロン+空白）を含めると値がそこで切れる（過去に発生したparser不具合、`docs/PLAN.md`参照）。`./scripts/check-skill-frontmatter.sh`（CIの`skill-frontmatter` jobと同じ）で機械的に確認できる |
+| Frontmatter形式 | `name`・`description`・`source`が揃っている。`description:`は引用符なしのYAML plain scalarなので、値のどこであれ`: `（コロン+空白）を含めると値がそこで切れる（過去に発生したparser不具合、`docs/PLAN.md`参照）。同様に` #`（空白+ハッシュ）もYAMLコメントの開始とみなされ、それ以降が切れる（`rust-unsafe-soundness`の"# Safety doc section"で再発、issue #24）。`./scripts/check-skill-frontmatter.sh`（CIの`skill-frontmatter` jobと同じ）で両方とも機械的に確認できる |
 | Line budget | 同スクリプトが500行のhard budgetを超えていないかCIで検査する。ソフトな目安（既存skillのレンジ137–233行）から大きく外れる場合は`references/`分割を検討する——こちらはCIでは強制しない |
 | Trigger起動性 | そのskillが起動すべき/すべきでない代表的なpromptを数個想定し、`description`の語彙で自己判別できるか確認する（近縁skillとの誤起動がないか） |
 | Attribution | `source:`のCC-BY-4.0/Apache-2.0表記とpinned commitが正しい |

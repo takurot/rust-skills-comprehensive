@@ -1,6 +1,6 @@
 ---
 name: rust-unsafe-soundness
-description: Reason rigorously about whether unsafe Rust is sound — derive and document safety preconditions, tell encapsulated vs exposed unsafe apart, spot "crying wolf" unsafe markers, and use MaybeUninit for uninitialized/partially-initialized memory. Use when auditing an unsafe function for soundness, writing a # Safety doc section, or deciding whether a safe wrapper around unsafe code is actually sound for every possible caller input.
+description: Reason rigorously about whether unsafe Rust is sound — derive and document safety preconditions, tell encapsulated vs exposed unsafe apart, spot "crying wolf" unsafe markers, and use MaybeUninit for uninitialized/partially-initialized memory. Use when auditing an unsafe function for soundness, documenting an unsafe function's safety preconditions, or deciding whether a safe wrapper around unsafe code is actually sound for every possible caller input.
 source: |
   Adapted from Comprehensive Rust (https://google.github.io/comprehensive-rust/),
   © Google LLC, CC-BY-4.0. Code samples Apache-2.0. Source pin: 351fafa (2026-08-05).

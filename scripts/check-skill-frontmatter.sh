@@ -50,6 +50,20 @@ for skill_md in "$SKILLS_DIR"/*/SKILL.md; do
     status=1
   fi
 
+  # Same hazard, different character: a space followed by '#' starts a YAML
+  # comment in an unquoted plain scalar, silently truncating everything
+  # after it — this bit rust-unsafe-soundness's description ("...writing a
+  # # Safety doc section...") in exactly the same way as the ': ' case
+  # above (issue #24). Skip this check if the value is already quoted
+  # (starts with a literal '"' or "'"), where '#' has no special meaning.
+  case "$fm_desc" in
+    '"'*|"'"*) ;;
+    *' #'*)
+      echo "FAIL: $skill_md — description contains ' #' (space+hash), which starts a YAML comment in an unquoted value and truncates everything after it — rewrite to avoid it (docs/WORKFLOW.md §4.2)"
+      status=1
+      ;;
+  esac
+
   lines="$(wc -l < "$skill_md" | tr -d ' ')"
   if (( lines > MAX_LINES )); then
     echo "FAIL: $skill_md — $lines lines exceeds the ${MAX_LINES}-line budget (docs/WORKFLOW.md §1)"
