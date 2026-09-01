@@ -36,7 +36,11 @@ list_skills() {
     echo "Available skills:"
     for d in "$SKILLS_SRC"/*/; do
         name="$(basename "$d")"
-        desc="$(awk -F': ' '/^description:/{ $1=""; print substr($0,2); exit }' "$d/SKILL.md")"
+        # Strip only the leading "description: " prefix — do NOT split on
+        # ': ' generally (awk -F': ' used to do this, and truncated any
+        # description containing ': ' elsewhere in its text, e.g. a quoted
+        # error message like `"error: something"` — issue #26).
+        desc="$(sed -n 's/^description: *//p' "$d/SKILL.md" | head -1)"
         printf '  %-28s %s\n' "$name" "$desc"
     done
 }
