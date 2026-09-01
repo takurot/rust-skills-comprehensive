@@ -44,6 +44,8 @@ out**. No new compiler magic; it's an API design constraint enforced by ownershi
 way any other type enforces its own invariants by controlling its public surface.
 
 ```rust
+// Simplified — the real std definition has a private field and extra bounds/methods; this
+// captures the shape that matters here.
 #[repr(transparent)]
 pub struct Pin<Ptr> { pointer: Ptr }
 
@@ -83,6 +85,9 @@ for:
 - Some FFI wrapper types around C++ objects that are inherently address-sensitive
 
 ```rust
+// This is std's own (unstable) implementation, shown for how the opt-out works — `impl !Trait`
+// (negative impl) needs #![feature(negative_impls)] and isn't available on stable Rust. You
+// can't write this yourself; use `PhantomPinned` as a field instead, as shown below.
 pub struct PhantomPinned;
 impl !Unpin for PhantomPinned {}
 ```

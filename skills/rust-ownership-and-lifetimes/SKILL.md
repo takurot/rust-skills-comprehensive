@@ -27,9 +27,9 @@ violation of one of them:
 
 | Compiler message / code | Which rule | Typical fix |
 |---|---|---|
-| `error[E0502]: cannot borrow `x` as mutable because it is also borrowed as immutable` | Aliasing | End the shared borrow before creating the mutable one (see NLL below), or restructure so only one reference is live at a time. |
-| `error[E0499]: cannot borrow `x` as mutable more than once` | Aliasing | You have two `&mut` at once — pass one by value/consume it, or scope them so they don't overlap. |
-| `error[E0597]: `x` does not live long enough` / borrowed value dropped while still borrowed | Outlives | The referent is dropped before the reference is used. Extend the referent's lifetime (move it up a scope) or stop borrowing (clone, or restructure ownership). |
+| ``error[E0502]: cannot borrow `x` as mutable because it is also borrowed as immutable`` | Aliasing | End the shared borrow before creating the mutable one (see NLL below), or restructure so only one reference is live at a time. |
+| ``error[E0499]: cannot borrow `x` as mutable more than once`` | Aliasing | You have two `&mut` at once — pass one by value/consume it, or scope them so they don't overlap. |
+| ``error[E0597]: `x` does not live long enough`` / borrowed value dropped while still borrowed | Outlives | The referent is dropped before the reference is used. Extend the referent's lifetime (move it up a scope) or stop borrowing (clone, or restructure ownership). |
 | `error[E0106]: missing lifetime specifier` | Elision failed | Rust's elision rules (below) couldn't infer one — annotate explicitly. |
 | "cannot move out of `x` because it is borrowed" | Aliasing + move | You're trying to move a value while a reference to it is alive. Clone, or drop the reference first. |
 | Iterator invalidation (`vec.push` while iterating `&vec`) | Aliasing | Mutating a collection while holding references into it can reallocate and dangle those references — collect changes into a separate buffer, then apply them after the loop, or use indices instead of references. |

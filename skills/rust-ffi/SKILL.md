@@ -74,7 +74,8 @@ let rust_repr = (b"Hello, Rust", 11);     // Rust: pointer + length, no NUL requ
 let c: &str = unsafe { std::ffi::CStr::from_ptr(ptr).to_str().unwrap() };
 
 // Rust → C: Rust strings aren't NUL-terminated by default — use CString/CStr,
-// or the `c"..."` literal (Rust 2021+) which appends the NUL for you: c"Rust" == b"Rust\0"
+// or the `c"..."` literal (Rust 1.77+, any edition) which appends the NUL for you:
+// c"Rust" == b"Rust\0"
 ```
 
 Checklist:
