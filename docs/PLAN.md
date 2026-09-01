@@ -113,6 +113,27 @@ deliberately older test commit. `.github/workflows/upstream-drift.yml` runs it w
 09:00 UTC) plus on `workflow_dispatch`, and opens/comments on an `upstream-drift`-labeled Issue
 when drift is found — notification only, not an auto-fix. See `docs/WORKFLOW.md` §11.
 
+**Upstream drift detection: truncation handling (2026-09-01, issue #30)**: the compare API's
+`files` array is capped (observed cap: 300 entries) with no Link-header pagination available to
+recover files past it, so a pin old enough to accumulate >300 changed files upstream could have
+silently produced a false `OK: no upstream changes detected`. `check-upstream-drift.sh` now
+reads `.truncated` and `.files | length` from the compare response and, on a suspected
+truncation (either signal), emits a `WARNING: compare result may be truncated ...` line and
+exits non-zero instead of `OK:`; `upstream-drift.yml` treats that the same as `DRIFT:` for
+opening/commenting on the `upstream-drift`-labeled Issue, but with a title/body that says
+detection was incomplete rather than claiming clean drift. Verified manually (no >300-file test
+fixture available against the live pin): (1) ran the real `gh api` call against the current pin
+— clean, non-truncated, `OK:` as before; (2) confirmed the `--jq` filter's correctness against
+a locally saved compare response with `jq` directly (an earlier version of the filter had a jq
+operator-precedence bug — `[...] | join(" "), (.files[]?.filename)` binds the trailing
+`(.files[]?.filename)` inside the piped RHS rather than back at the root — fixed by wrapping the
+first branch in its own parens before the comma); (3) exercised the truncation-detected code
+path by substituting a mocked `compare_output` (`truncated=true`, `files_count=300`, one fake
+changed path) for the `gh api` call in a scratch copy of the script, confirming both the
+`DRIFT:` line for the fake path and the `WARNING:` line print together with a non-zero exit;
+(4) validated `.github/workflows/upstream-drift.yml`'s YAML with
+`python3 -c "import yaml; yaml.safe_load(...)"` after the edit.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription

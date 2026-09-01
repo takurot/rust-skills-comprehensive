@@ -12,9 +12,13 @@
 # Output convention (grep-able by callers, e.g. .github/workflows/upstream-drift.yml):
 #   "DRIFT: <skill> — N changed path(s) under <prefix>: <file>, <file>, ..."  (one per hit)
 #   "OK: no upstream changes detected under any mapped skill's source paths"  (when clean)
+#   "WARNING: compare result may be truncated ..."  (files list looks incomplete — see below)
 # Exit code reflects whether the check itself ran successfully — 0 even when drift is found,
-# non-zero only on a real failure (e.g. `gh api` error, missing pin). Callers that care whether
-# drift was found should grep stdout for "^DRIFT:", not rely on the exit code.
+# non-zero only on a real failure (e.g. `gh api` error, missing pin) *or* a suspected-truncated
+# compare (see below) — "OK" would be a false negative there. Callers that care whether drift
+# was found should grep stdout for "^DRIFT:", not rely on the exit code; callers that need to
+# tell truncation apart from a transport error should grep for "^WARNING: compare result may be
+# truncated".
 #
 # Usage: ./scripts/check-upstream-drift.sh
 
@@ -82,9 +86,30 @@ rust-ffi|src/android/interoperability/with-c
 rust-ffi|src/android/interoperability/cpp
 "
 
-changed_files="$(gh api "repos/$UPSTREAM_REPO/compare/${pin}...main" --paginate \
-  --jq '.files[]?.filename' 2>&1)" \
-  || { echo "ERROR: gh api compare against $UPSTREAM_REPO failed: $changed_files" >&2; exit 1; }
+# Fetch truncation signal (`.truncated`, if the API ever sets it) and the returned file count
+# on the first line, then the changed filenames — one `gh api` call, split with `tail`/`head`
+# so we don't need a second round trip. No `--paginate`: this endpoint returns a single object,
+# not a list, and `--paginate` mishandles the multi-line `--jq` output above (it expects the
+# filtered result to be a JSON array to concatenate across pages). Link-header pagination
+# wouldn't recover files past the `files` array cap anyway — see the truncation check below.
+compare_output="$(gh api "repos/$UPSTREAM_REPO/compare/${pin}...main" \
+  --jq '([(.truncated // false | tostring), (.files // [] | length | tostring)] | join(" ")),
+        (.files[]?.filename)' 2>&1)" \
+  || { echo "ERROR: gh api compare against $UPSTREAM_REPO failed: $compare_output" >&2; exit 1; }
+
+meta_line="$(printf '%s\n' "$compare_output" | head -1)"
+truncated="$(printf '%s' "$meta_line" | cut -d' ' -f1)"
+files_count="$(printf '%s' "$meta_line" | cut -d' ' -f2)"
+changed_files="$(printf '%s\n' "$compare_output" | tail -n +2)"
+
+# GitHub's compare-two-commits API caps the `files` array (observed cap: 300 entries) and does
+# not expose Link-header pagination over it, so `--paginate` cannot recover files past the cap.
+# Treat both an explicit `.truncated: true` and hitting the observed cap as truncation, since a
+# capped-but-unflagged response is otherwise indistinguishable from "no changes past this point".
+truncation_suspected=0
+if [[ "$truncated" == "true" ]] || [[ "$files_count" -ge 300 ]]; then
+  truncation_suspected=1
+fi
 
 drift_found=0
 
@@ -98,6 +123,13 @@ while IFS='|' read -r skill prefix; do
     echo "DRIFT: $skill — $count changed path(s) under $prefix: $joined"
   fi
 done <<< "$mapping"
+
+if [[ "$truncation_suspected" -eq 1 ]]; then
+  # Report even when DRIFT lines were already found above — a truncated compare means paths
+  # beyond the cap were never checked, so "no further drift" can't be claimed either way.
+  echo "WARNING: compare result may be truncated (files returned: $files_count, pin: $pin) — GitHub's compare API caps the files list around 300 entries with no further pagination. Drift may exist under paths not covered above; update the pin (docs/WORKFLOW.md §8) and re-run, or review manually against a local clone."
+  exit 1
+fi
 
 if [[ "$drift_found" -eq 0 ]]; then
   echo "OK: no upstream changes detected under any mapped skill's source paths (pin: $pin)"
