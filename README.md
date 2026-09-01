@@ -140,11 +140,19 @@ platform-specific tracks), and what's still open.
 
 ## Attribution & license
 
-The skills' prose is adapted from [Comprehensive Rust](https://google.github.io/comprehensive-rust/)
-by Google LLC, licensed [CC-BY-4.0](LICENSE-CONTENT) — see that file for the full license.
-Rust code samples in the original course (and reproduced or adapted in these skills) are
-licensed [Apache-2.0](LICENSE-CODE). Each `SKILL.md`'s frontmatter names the exact upstream
-paths it draws from and the pinned commit.
+This repository's contents fall into two categories with different licenses:
+
+- **Skill content derived from Comprehensive Rust** (`skills/**/SKILL.md`): the prose is
+  adapted from [Comprehensive Rust](https://google.github.io/comprehensive-rust/) by Google
+  LLC, licensed [CC-BY-4.0](LICENSE-CONTENT) — see that file for the full license. Rust code
+  samples in the original course (and reproduced or adapted in these skills) are licensed
+  [Apache-2.0](LICENSE-CODE). Each `SKILL.md`'s frontmatter names the exact upstream paths it
+  draws from and the pinned commit.
+- **Everything else original to this repository** — `install.sh`, `scripts/*.sh`,
+  `.github/workflows/*.yml`, and the docs in `docs/*.md` (`PLAN.md`, `WORKFLOW.md`,
+  `FILE_MAP.md`, `FEEDBACK.md`, `eval/`, etc.), plus `CONTRIBUTING.md` and `CLAUDE.md` — is not
+  derived from the upstream course and is licensed [Apache-2.0](LICENSE-CODE), the same license
+  file used above.
 
 If you edit or extend a skill here in a way that still derives from the course text, keep the
 attribution note in that skill's frontmatter and this README's license section accurate.
