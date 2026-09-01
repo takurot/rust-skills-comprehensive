@@ -51,6 +51,16 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --dest)
+            # Reject a missing argument *and* the next token being another
+            # flag (e.g. `--dest --force`) — both used to fall through to
+            # PROJECT_DIR="$2" and fail later with a raw, confusing error
+            # (an unbound-variable crash, or `mkdir: illegal option --`)
+            # instead of this script's own usage message (issue #25 review).
+            if [[ $# -lt 2 || "$2" == -* ]]; then
+                echo "error: --dest requires a path argument" >&2
+                usage
+                exit 1
+            fi
             SCOPE="custom"
             PROJECT_DIR="$2"
             shift 2
@@ -111,10 +121,12 @@ echo
 
 installed=0
 skipped=0
+not_found=0
 for name in "${SELECTED[@]}"; do
     src="$SKILLS_SRC/$name"
     if [[ ! -d "$src" ]]; then
         echo "  ✗ $name — no such skill in $SKILLS_SRC (see --list)" >&2
+        not_found=$((not_found + 1))
         continue
     fi
 
@@ -142,4 +154,9 @@ echo "Done: $installed installed, $skipped skipped."
 if [[ "$SCOPE" == "project" ]]; then
     echo "Installed to the project you ran this from: $DEST"
     echo "Re-run from a different project directory, or with --global, as needed."
+fi
+
+if [[ $not_found -gt 0 ]]; then
+    echo "error: $not_found skill name(s) did not match any directory under $SKILLS_SRC (see --list)" >&2
+    exit 1
 fi
