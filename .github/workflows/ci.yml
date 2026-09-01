@@ -75,8 +75,20 @@ jobs:
           mkdir -p /tmp/rsc-traversal-canary
           touch /tmp/rsc-traversal-canary/marker
           for bad_name in ".." "../../etc" "a/b" "."; do
-            if ./install.sh --dest /tmp/rsc-traversal-test --force "$bad_name"; then
+            out="$(./install.sh --dest /tmp/rsc-traversal-test --force "$bad_name" 2>&1)" && rc=0 || rc=$?
+            if [[ $rc -eq 0 ]]; then
               echo "expected non-zero exit for skill name: $bad_name" >&2
+              exit 1
+            fi
+            # Assert the *new* guard's own message fired, not just any non-zero exit —
+            # some of these names (e.g. "..") are also independently blocked by rm's own
+            # "refusing to remove '.' or '..'" guard, or by the pre-existing "no such
+            # skill" check for a name that never resolves to a real directory, so a bare
+            # exit-code check here would still pass green even with the guard removed
+            # (code review on PR #51 caught this).
+            if [[ "$out" != *"invalid skill name"* ]]; then
+              echo "expected the path-traversal guard's own error for skill name: $bad_name" >&2
+              echo "$out" >&2
               exit 1
             fi
           done

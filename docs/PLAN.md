@@ -186,6 +186,19 @@ sandbox victim directory survives. Added a CI regression step to `install-smoke-
 (`.github/workflows/ci.yml`) that asserts `..`, `../../etc`, `a/b`, and `.` are all rejected
 (non-zero exit) and that a canary file outside the install dest survives every attempt.
 
+**PR #51 code review (docs/WORKFLOW.md §9.1) caught a real gap in that CI step**: a bare
+non-zero-exit assertion for those four specific names doesn't actually exercise the new guard —
+`..` and `.` are independently blocked by `rm`'s own `.`/`..` refusal, and `../../etc`/`a/b`
+independently fail the pre-existing "no such skill" check (`[[ ! -d "$src" ]]`) at the shallow
+`--dest /tmp/rsc-traversal-test` depth the test used, since neither resolves to a real
+directory there. The test would have stayed green even with the new `case` guard fully removed.
+Fixed by asserting the guard's own `"invalid skill name"` message appears in the output, not
+just a non-zero exit code. Verified the fix to the test itself two ways: (1) ran it against the
+patched `install.sh` — passes; (2) surgically removed the `case` guard from a scratch copy of
+`install.sh` (restored from a backup immediately after), re-ran the same four-name loop in
+place — every name now correctly fails the "guard message absent" assertion, proving the
+strengthened test actually catches the guard being reverted.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription
