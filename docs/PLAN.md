@@ -274,10 +274,14 @@ What a move is, `Pin<Ptr>`, `Unpin`, `PhantomPinned`, the self-referential-buffe
 its own recall path, and `rust-async` links here rather than duplicating.
 
 **11. `rust-ffi`** *(94 min + platform extracts)* — `unsafe-deep-dive/ffi/*` plus the
-*general-purpose* parts of `android/interoperability/*` and `chromium/interoperability-with-cpp/*`:
-Rust↔C↔C++ representation and semantic differences, bindgen, the `cxx` bridge model, type mapping,
-and error handling across the boundary. Deliberately extracts the platform-neutral core so it's
-useful outside Android/Chromium.
+*general-purpose* parts of `android/interoperability/*`: Rust↔C↔C++ representation and semantic
+differences, bindgen, the `cxx` bridge model, type mapping, and error handling across the
+boundary. Deliberately extracts the platform-neutral core so it's useful outside Android — the
+`cxx` bridge material comes from android's own C++ interop track (which already covers the
+bridge/genrules mechanics), not from Chromium's `interoperability-with-cpp` pages; the actual
+`source:` frontmatter (and `scripts/check-upstream-drift.sh`'s mapping) never included Chromium
+paths, only `android/interoperability/{with-c,cpp}/**` (issue #31 — this line previously
+implied Chromium was also a source, which it wasn't and isn't).
 
 ### Phase 4 — integration & gap-fill
 
