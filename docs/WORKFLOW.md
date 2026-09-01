@@ -195,13 +195,15 @@ git diff --check                 # 空白・改行の混在を検出
 ./scripts/check-install-list-sync.sh
 ./scripts/check-links.sh
 shellcheck --severity=warning install.sh scripts/*.sh
+npx --yes markdownlint-cli2 --config .markdownlint-cli2.jsonc "skills/**/*.md" "docs/**/*.md" "README.md"
 ```
 
 上記はすべて`.github/workflows/ci.yml`でpush/PR時に自動実行されるが、フィードバックを早く
 得るためローカルでも変更直後に実行する。ただしCIが検証するのは配布経路（frontmatterの
 必須key・line budget・`install.sh --list`とskills/の整合・リンク切れ・`install.sh`のsmoke
-test）だけであり、skillの技術的内容の正しさは自動化されていない。次は引き続き手動確認に
-代える。
+test）と`skills/`・`docs/`・README.mdの最低限のMarkdown品質（見出し構造・コードフェンスの
+言語指定、`.markdownlint-cli2.jsonc`参照）だけであり、skillの技術的内容の正しさは自動化
+されていない。次は引き続き手動確認に代える。
 
 - 変更した`SKILL.md`をfrontmatterから通読し、コードブロックのRustが構文的に妥当か目視確認する
   （`rustc --edition 2021 --crate-type lib -` にコード片を通して素早く構文チェックしてよい。
@@ -284,7 +286,8 @@ gh pr view <PR> --json mergeable,mergeStateStatus
   コンフリクトを解消し、§4〜§9を再実行する（コンフリクト解消で意図せず他人の変更を消さない）
 - `gh pr checks <PR>`（または`--watch`）で`.github/workflows/ci.yml`の全job
   （`shellcheck` / `skill-frontmatter` / `install-list-sync` / `link-check` /
-  `install-smoke-test`）がgreenであることを確認してからmergeする。落ちているjobがある場合、
+  `markdown-lint` / `install-smoke-test`）がgreenであることを確認してからmergeする。
+  落ちているjobがある場合、
   原因を修正せずmergeしない
 - 上記いずれも未実行のままmergeしない
 

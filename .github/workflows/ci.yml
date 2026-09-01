@@ -38,6 +38,19 @@ jobs:
       - name: Check relative links and [[name]] references
         run: ./scripts/check-links.sh
 
+  markdown-lint:
+    name: Markdown lint (heading structure, code fence language)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run markdownlint-cli2
+        uses: DavidAnson/markdownlint-cli2-action@v24
+        with:
+          globs: |
+            skills/**/*.md
+            docs/**/*.md
+            README.md
+
   install-smoke-test:
     name: install.sh smoke test
     runs-on: ubuntu-latest

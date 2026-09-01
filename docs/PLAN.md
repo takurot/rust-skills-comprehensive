@@ -57,6 +57,15 @@ are legitimate references to things outside this repo) — a dangling bare refer
 not-yet-built skill (the `rust-bare-metal` defect above) stays a `/skill-stocktake` concern,
 not a script one. `shellcheck` job widened to `scripts/*.sh`.
 
+**Markdown lint (2026-09-01, issue #4)**: added `.markdownlint-cli2.jsonc` and a `markdown-lint`
+CI job scoped to `skills/**/*.md`, `docs/**/*.md`, `README.md`. Rule selection is deliberately
+narrow (heading structure + `MD040` fenced-code-language) rather than the full default
+ruleset — this repo's prose is adapted from an external CC-BY-4.0 course, so line-length-style
+rules would force rewrites of upstream-derived wording for no content benefit. Fixed the small
+number of pre-existing violations this surfaced: missing blank lines after headings in
+`FILE_MAP.md`, and three unlabeled fenced code blocks (`PLAN.md`, `README.md`,
+`rust-ffi/SKILL.md`) tagged `text`.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription
@@ -248,7 +257,7 @@ standalone skills (exercises are eval input instead — see below).
 
 Because the course is CC-BY-4.0, every generated skill must include, in `SKILL.md`:
 
-```
+```text
 Adapted from Comprehensive Rust (https://google.github.io/comprehensive-rust/),
 © Google LLC, CC-BY-4.0. Code samples Apache-2.0. Source pin: 351fafa.
 ```
