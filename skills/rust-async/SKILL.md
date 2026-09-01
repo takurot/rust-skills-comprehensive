@@ -37,7 +37,7 @@ concurrently.
 ```rust
 // BUG: std::thread::sleep blocks the OS thread; join_all "runs" 10 sleeps
 // one after another instead of concurrently.
-async fn sleep_ms(id: u64, duration_ms: u64) {
+async fn sleep_ms(_id: u64, duration_ms: u64) {
     std::thread::sleep(Duration::from_millis(duration_ms));  // ← blocking!
 }
 join_all((1..=10).map(|t| sleep_ms(t, t * 10))).await;

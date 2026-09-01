@@ -134,6 +134,38 @@ changed path) for the `gh api` call in a scratch copy of the script, confirming 
 (4) validated `.github/workflows/upstream-drift.yml`'s YAML with
 `python3 -c "import yaml; yaml.safe_load(...)"` after the edit.
 
+**Skill accuracy fixes (2026-09-01, issue #33)**: six small, independently-verified defects
+fixed across six skills, none changing scope or `source:` pins:
+- `rust-unsafe-soundness`: the `MaybeUninit` partial-initialization example used
+  `external_data.len()` unclamped as the "bytes initialized" count passed to
+  `from_raw_parts`, while the preceding `zip` loop silently stops at `buf.len()` — for
+  `external_data.len() > buf.len()` the `SAFETY` comment's claim was false and the slice read
+  past what was actually initialized. Fixed with `.min(buf.len())`; verified with
+  `rustc --edition 2021 --crate-type lib` (compiles clean).
+- `rust-pinning`: the simplified `Pin<Ptr>` struct definition and the `impl !Unpin for
+  PhantomPinned {}` snippet (a negative impl, needs `#![feature(negative_impls)]`, not valid on
+  stable) were presented without noting they're simplified/unstable-std-internal pseudocode.
+  Added inline notes on both.
+- `rust-ffi`: the `c"..."` literal was labeled "(Rust 2021+)" as if edition-gated; it's actually
+  gated on Rust **1.77+** (any edition). Corrected.
+- `rust-polymorphism`: the `(value as &dyn Any).downcast_ref::<Concrete>()` downcast pattern
+  relies on trait upcasting coercion, stabilized in Rust 1.86 — pre-1.86 toolchains need a
+  trait-provided `as_any()` method instead. Added the version note and the pre-1.86 fallback.
+- `rust-ownership-and-lifetimes`: three triage-table rows had a `` `error[...]: ...`x`...` ``
+  shape — an inline-code span containing its own un-escaped backtick-wrapped `` `x` `` —
+  which single backticks can't nest (breaks at the first closing backtick). Fixed by
+  wrapping the three cells in double-backtick fences.
+- `rust-async`: Pitfall 1's `sleep_ms(id: u64, duration_ms: u64)` example never used `id` in the
+  body (an unused-variable warning under `rustc`). Renamed to `_id`; verified with
+  `rustc --edition 2021 --crate-type lib` (no warning).
+
+Verification for all six: `git diff --check`, `./scripts/check-skill-frontmatter.sh`,
+`./scripts/check-links.sh`, and `npx markdownlint-cli2` all clean; each skill still within the
+500-line hard budget (range 138–234 lines post-edit). Manual holistic re-check against the four
+`/skill-stocktake` checklist dimensions (content overlap, `MEMORY.md`/`CLAUDE.md` overlap,
+technical-reference freshness, scope fit) for these six specific skills: all **Keep** — each
+change is a narrow accuracy correction with no scope, delineation, or overlap impact.
+
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
 load fast and stay focused, together covering the course's teaching value — not a transcription

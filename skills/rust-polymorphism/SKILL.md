@@ -67,7 +67,9 @@ plain by-value type or generic parameter without `?Sized`.
 - **Downcasting requires `Any`**: to get a concrete type back out of a `dyn Trait`, the trait
   needs `Any` as a supertrait (`trait Foo: Any {}`), and you still cast through `dyn Any`
   explicitly (`(value as &dyn Any).downcast_ref::<Concrete>()`), not through `dyn Foo`
-  directly.
+  directly. That `as &dyn Any` cast relies on trait upcasting coercion, stable since Rust 1.86
+  — on older toolchains, add `fn as_any(&self) -> &dyn Any { self }` to the trait instead and
+  call that.
 - **Pitfall: reaching for `dyn Trait` too early.** Coming from OOP, it's tempting to make
   everything dynamically dispatched by default. This has a real cost — every call pays vtable
   indirection, and worse, patterns like "downcast to compare/combine two trait objects of

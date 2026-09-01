@@ -148,7 +148,8 @@ anyway**:
 
 ```rust
 let mut buf = [const { MaybeUninit::<u8>::uninit() }; 2048];   // no zeroing cost
-let len = external_data.len();
+let len = external_data.len().min(buf.len());   // `zip` below stops at buf.len() bytes —
+                                                 // `len` must match, or the SAFETY claim is false
 for (dest, src) in buf.iter_mut().zip(external_data) {
     dest.write(*src);                     // write() is always safe on MaybeUninit
 }
