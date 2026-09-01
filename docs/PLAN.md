@@ -40,8 +40,9 @@ themselves at the pinned commit. `LICENSE-CODE` (Apache-2.0) and `LICENSE-CONTEN
 vendor the upstream course's two license texts at the repo root.
 
 **Not yet done**: Phase 4 (routing block in `rust-patterns`, Day 1–2 gap-fill), Phase 5
-(platform skills — still gated on user confirmation), exercise-based eval against the course's
-own exercises/solutions.
+(platform skills — still gated on user confirmation). Exercise-based eval against the course's
+own exercises/solutions is now piloted for 2 exercises — see the entry below and
+`docs/eval/README.md` — with several mapped exercises still deferred to a follow-up.
 
 **CI hardening (2026-08-31, issues #1–#3)**: closed a real gap in `skill-frontmatter` —
 the script checked presence of frontmatter keys but never caught the actual `rust-pinning`
@@ -65,6 +66,30 @@ rules would force rewrites of upstream-derived wording for no content benefit. F
 number of pre-existing violations this surfaced: missing blank lines after headings in
 `FILE_MAP.md`, and three unlabeled fenced code blocks (`PLAN.md`, `README.md`,
 `rust-ffi/SKILL.md`) tagged `text`.
+
+**Exercise-based eval (2026-09-01, issue #6)**: added `docs/eval/` — a mapping of upstream
+`exercise.md`/`solution.md` coding-exercise pairs to the skill(s) covering them, a
+solve-blind/judge-with-solution methodology, and a report format
+(`docs/eval/README.md`). Only 3 of the 11 skills have upstream chapters that ship a
+self-contained *coding* exercise with a reference solution (`rust-ownership-and-lifetimes`,
+`rust-unsafe-fundamentals`, plus the shared-`solutions.md` shape covering
+`rust-concurrency-sync`/`rust-async`) — the rest of this skill set derives from
+worked-example/prose pages or discussion-only exercises with no code solution to compare
+against, so there's nothing this method can run for them; that's not a gap in the eval, see
+`docs/eval/README.md`'s mapping table. Ran a first pilot
+(`docs/eval/results/2026-09-01-pilot.md`): 2 exercises against `rust-ownership-and-lifetimes`
+("Wizard's Inventory" from `borrowing/`, "Protobuf Parsing" from `lifetimes/`), each solved by
+a fresh subagent given only the skill + exercise skeleton (no `solution.md`), then judged
+against the real `solution.md` by this session. Both **PASS** — the solver's technique matched
+`solution.md`'s, and each solver's own report cited the specific skill section that led it
+there. Deferred to a follow-up: `unsafe-rust/exercise.md` (no missing dependency — its
+`Cargo.toml` already has what it needs — left out purely for the setup time of its larger
+skeleton; also straddles `rust-unsafe-fundamentals`/`rust-ffi` rather than cleanly mapping to
+one skill) and the `concurrency/*` exercises (need their shared `solutions.md` split
+per-exercise before they fit the Assemble step). Not wired into `.github/workflows/ci.yml` —
+an LLM-driven solve/judge step doesn't fit the deterministic jobs there;
+`scripts/check-eval-map.sh` is a local-only sanity check that the mapping's literal upstream
+paths still exist, not a CI job.
 
 Source map: [`FILE_MAP.md`](./FILE_MAP.md). Goal: turn Google's Comprehensive Rust course into
 a set of Claude Code **skills** (`SKILL.md` + `references/`), each scoped tightly enough to
