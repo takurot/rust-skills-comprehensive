@@ -30,8 +30,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          # Don't let `set -e` abort here: scripts/check-upstream-drift.sh now exits non-zero
+          # both on a real failure (gh api error, missing pin) and on a suspected-truncated
+          # compare (see the script's header comment) — the latter still needs its output
+          # captured and turned into an issue below, not just a red CI run that's easy to miss
+          # on a weekly schedule.
           output="$(./scripts/check-upstream-drift.sh)"
+          exit_code=$?
+          set -e
           echo "$output"
           # Random delimiter: $output embeds upstream file paths (google/comprehensive-rust,
           # via scripts/check-upstream-drift.sh) — a fixed delimiter could in principle collide
@@ -47,9 +54,20 @@ jobs:
           else
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
+          if echo "$output" | grep -q '^WARNING: compare result may be truncated'; then
+            echo "truncated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "truncated=false" >> "$GITHUB_OUTPUT"
+          fi
+          # A non-zero exit that isn't explained by truncation is a real failure (gh api error,
+          # missing pin, etc.) — fail the job so it's visible, same as before this change.
+          if [[ "$exit_code" -ne 0 ]] && [[ "$(echo "$output" | grep -c '^WARNING: compare result may be truncated')" -eq 0 ]]; then
+            echo "check-upstream-drift.sh failed (exit $exit_code) for a reason other than truncation" >&2
+            exit "$exit_code"
+          fi
 
       - name: Ensure upstream-drift label exists
-        if: steps.drift.outputs.found == 'true'
+        if: steps.drift.outputs.found == 'true' || steps.drift.outputs.truncated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -60,28 +78,37 @@ jobs:
             --force
 
       - name: Open or update drift issue
-        if: steps.drift.outputs.found == 'true'
+        if: steps.drift.outputs.found == 'true' || steps.drift.outputs.truncated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           DRIFT_RESULT: ${{ steps.drift.outputs.result }}
+          TRUNCATED: ${{ steps.drift.outputs.truncated }}
         run: |
           set -euo pipefail
-          body="Automated check (\`.github/workflows/upstream-drift.yml\`, \`scripts/check-upstream-drift.sh\`) found upstream changes on [google/comprehensive-rust](https://github.com/google/comprehensive-rust) under one or more skills' declared source paths, since this repo's pinned commit (\`docs/PLAN.md\`'s Upstream pin).
+          if [[ "$TRUNCATED" == "true" ]]; then
+            title="Upstream comprehensive-rust drift check: automated detection incomplete (truncated compare)"
+            intro="Automated check (\`.github/workflows/upstream-drift.yml\`, \`scripts/check-upstream-drift.sh\`) could **not fully compare** this repo's pinned commit against [google/comprehensive-rust](https://github.com/google/comprehensive-rust)'s default branch — the GitHub compare API's \`files\` list appears truncated (it caps around 300 entries with no further pagination). Any \`DRIFT:\` lines below are still real, but the absence of a \`DRIFT:\` line for a given skill does **not** mean it's clean — paths beyond the cap were never checked."
+          else
+            title="Upstream comprehensive-rust drift detected"
+            intro="Automated check (\`.github/workflows/upstream-drift.yml\`, \`scripts/check-upstream-drift.sh\`) found upstream changes on [google/comprehensive-rust](https://github.com/google/comprehensive-rust) under one or more skills' declared source paths, since this repo's pinned commit (\`docs/PLAN.md\`'s Upstream pin)."
+          fi
+
+          body="$intro
 
           \`\`\`
           $DRIFT_RESULT
           \`\`\`
 
-          Next steps: see \`docs/WORKFLOW.md\` §3.3 (re-cloning \`ref/comprehensive-rust\` at the new commit) and §4 (Draft/Validate/Refine) for updating the affected skill(s), then bump the \`source:\` pin per §8.
+          Next steps: see \`docs/WORKFLOW.md\` §3.3 (re-cloning \`ref/comprehensive-rust\` at the new commit) and §4 (Draft/Validate/Refine) for updating the affected skill(s), then bump the \`source:\` pin per §8. A truncated compare is best resolved by bumping the pin closer to upstream's current \`main\` (shrinking the compare range) and re-running this check, or by reviewing manually against a local clone.
 
-          This issue is reopened or commented on again by the next scheduled run if the drift is still present — closing it without updating the affected skill(s) doesn't stop that."
+          This issue is reopened or commented on again by the next scheduled run if the drift or truncation is still present — closing it without updating the affected skill(s) (or the pin) doesn't stop that."
 
           existing="$(gh issue list --label upstream-drift --state open --json number --jq '.[0].number // empty')"
           if [[ -n "$existing" ]]; then
             gh issue comment "$existing" --body "$body"
           else
             gh issue create \
-              --title "Upstream comprehensive-rust drift detected" \
+              --title "$title" \
               --body "$body" \
               --label upstream-drift
           fi
