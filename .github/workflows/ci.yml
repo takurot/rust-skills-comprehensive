@@ -69,6 +69,68 @@ jobs:
         run: ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
       - name: installed file is present and non-empty
         run: test -s /tmp/rsc-install-test/.claude/skills/rust-api-design/SKILL.md
+      - name: "completion summary and pause behavior (issue #52)"
+        run: |
+          set -euo pipefail
+
+          assert_contains() {
+            if [[ "$1" != *"$2"* ]]; then
+              echo "expected output to contain: $2" >&2
+              echo "$1" >&2
+              exit 1
+            fi
+          }
+
+          test_root="$(mktemp -d)"
+          repo_dir="$PWD"
+
+          custom_dir="$test_root/custom"
+          custom_output="$(./install.sh --dest "$custom_dir" rust-api-design)"
+          assert_contains "$custom_output" "Status: Installation complete"
+          assert_contains "$custom_output" "Destination: $custom_dir/.claude/skills"
+          assert_contains "$custom_output" "Mode: copy"
+          assert_contains "$custom_output" $'Installed (1):\n  - rust-api-design\nSkipped (0): none\nFailed (0): none'
+
+          skip_output="$(./install.sh --dest "$custom_dir" rust-api-design)"
+          assert_contains "$skip_output" $'Installed (0): none\nSkipped (1):\n  - rust-api-design\nFailed (0): none'
+
+          global_home="$test_root/home"
+          global_output="$(HOME="$global_home" ./install.sh --global rust-pinning)"
+          assert_contains "$global_output" "Destination: $global_home/.claude/skills"
+
+          project_dir="$test_root/project"
+          mkdir -p "$project_dir"
+          project_output="$(cd "$project_dir" && "$repo_dir/install.sh" rust-polymorphism)"
+          assert_contains "$project_output" "Destination: $project_dir/.claude/skills"
+
+          mixed_dir="$test_root/mixed"
+          mixed_rc=0
+          mixed_output="$(./install.sh --dest "$mixed_dir" rust-ffi no-such-skill 2>&1)" || mixed_rc=$?
+          if [[ $mixed_rc -ne 1 ]]; then
+            echo "expected mixed valid/invalid install to exit 1, got $mixed_rc" >&2
+            exit 1
+          fi
+          assert_contains "$mixed_output" "Status: Installation failed"
+          assert_contains "$mixed_output" $'Installed (1):\n  - rust-ffi\nSkipped (0): none\nFailed (1):\n  - no-such-skill'
+
+          pause_output="$(printf '\n' | ./install.sh --pause --dest "$test_root/pause" rust-async)"
+          assert_contains "$pause_output" "Status: Installation complete"
+          assert_contains "$pause_output" "Press Enter to close..."
+
+          eof_output="$(./install.sh --pause --dest "$test_root/eof" rust-newtype-and-raii </dev/null 2>&1)"
+          assert_contains "$eof_output" "warning: --pause requested but stdin reached EOF; continuing without waiting."
+
+          failed_pause_rc=0
+          failed_pause_output="$(printf '\n' | ./install.sh --pause --dest "$test_root/failed-pause" no-such-skill 2>&1)" || failed_pause_rc=$?
+          if [[ $failed_pause_rc -ne 1 ]]; then
+            echo "expected paused invalid install to exit 1, got $failed_pause_rc" >&2
+            exit 1
+          fi
+          assert_contains "$failed_pause_output" "Status: Installation failed"
+          assert_contains "$failed_pause_output" "Press Enter to close..."
+
+          help_output="$(./install.sh --help)"
+          assert_contains "$help_output" "--pause"
       - name: reject path-traversal skill names (issue #44)
         run: |
           set -euo pipefail

@@ -84,11 +84,29 @@ content without re-running the script:
 ./install.sh --list              # show all available skills with their descriptions
 ./install.sh --dest /some/path   # install into <path>/.claude/skills instead of cwd/global
 ./install.sh --force ...         # overwrite an existing install of the same skill(s)
+./install.sh --pause --global    # wait for Enter after the final summary
 ./install.sh --help
 ```
 
 Re-running is always safe: existing installs are skipped unless you pass `--force`; symlink
 installs need no re-run at all to pick up edits.
+
+A completed install ends with a summary showing the result, destination, mode, and the exact
+skills installed, skipped, or rejected:
+
+```text
+Status: Installation complete
+Destination: /path/to/project/.claude/skills
+Mode: copy
+Installed (1):
+  - rust-api-design
+Skipped (0): none
+Failed (0): none
+```
+
+Use `--pause` when launching the installer from a window that closes as soon as the command
+finishes. It waits for Enter after printing the summary. Without `--pause`, the installer remains
+non-interactive for normal terminal, pipe, and CI use.
 
 ### Manual install
 

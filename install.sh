@@ -12,6 +12,7 @@
 #   ./install.sh rust-api-design rust-async     # install only the named skills
 #   ./install.sh --global rust-pinning          # combine scope + selection
 #   ./install.sh --symlink                # symlink instead of copy (repo devs: live-edit)
+#   ./install.sh --pause                  # wait for Enter after the final summary
 #   ./install.sh --list                   # list available skills and exit
 #   ./install.sh --force ...              # overwrite an existing install of the same skill
 #
@@ -26,10 +27,11 @@ SKILLS_SRC="$SCRIPT_DIR/skills"
 MODE="copy"          # copy | symlink
 DEST=""              # resolved target .../.claude/skills directory
 FORCE=0
+PAUSE=0
 SELECTED=()
 
 usage() {
-    sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 list_skills() {
@@ -75,6 +77,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --force)
             FORCE=1
+            shift
+            ;;
+        --pause)
+            PAUSE=1
             shift
             ;;
         --list)
@@ -126,6 +132,9 @@ echo
 installed=0
 skipped=0
 not_found=0
+INSTALLED_NAMES=()
+SKIPPED_NAMES=()
+FAILED_NAMES=()
 for name in "${SELECTED[@]}"; do
     # Reject anything that isn't a plain directory name *before* it's used to build src/target
     # below — a name containing '/' or '..' can walk src/target outside SKILLS_SRC/DEST
@@ -136,6 +145,7 @@ for name in "${SELECTED[@]}"; do
         ''|.|..|*/*)
             echo "  ✗ $name — invalid skill name (must be a plain directory name: no '/', '.', or '..')" >&2
             not_found=$((not_found + 1))
+            FAILED_NAMES+=("$name")
             continue
             ;;
     esac
@@ -144,6 +154,7 @@ for name in "${SELECTED[@]}"; do
     if [[ ! -d "$src" ]]; then
         echo "  ✗ $name — no such skill in $SKILLS_SRC (see --list)" >&2
         not_found=$((not_found + 1))
+        FAILED_NAMES+=("$name")
         continue
     fi
 
@@ -152,6 +163,7 @@ for name in "${SELECTED[@]}"; do
         if [[ $FORCE -eq 0 ]]; then
             echo "  – $name — already exists, skipping (use --force to overwrite)"
             skipped=$((skipped + 1))
+            SKIPPED_NAMES+=("$name")
             continue
         fi
         rm -rf "$target"
@@ -164,16 +176,60 @@ for name in "${SELECTED[@]}"; do
     fi
     echo "  ✓ $name"
     installed=$((installed + 1))
+    INSTALLED_NAMES+=("$name")
 done
 
-echo
-echo "Done: $installed installed, $skipped skipped."
-if [[ "$SCOPE" == "project" ]]; then
-    echo "Installed to the project you ran this from: $DEST"
-    echo "Re-run from a different project directory, or with --global, as needed."
+exit_status=0
+if [[ $not_found -gt 0 ]]; then
+    exit_status=1
 fi
 
-if [[ $not_found -gt 0 ]]; then
-    echo "error: $not_found skill name(s) did not match any directory under $SKILLS_SRC (see --list)" >&2
-    exit 1
+echo
+if [[ $exit_status -eq 0 ]]; then
+    echo "Status: Installation complete"
+else
+    echo "Status: Installation failed"
 fi
+echo "Destination: $DEST"
+echo "Mode: $MODE"
+
+if [[ $installed -eq 0 ]]; then
+    echo "Installed (0): none"
+else
+    echo "Installed ($installed):"
+    for name in "${INSTALLED_NAMES[@]}"; do
+        echo "  - $name"
+    done
+fi
+
+if [[ $skipped -eq 0 ]]; then
+    echo "Skipped (0): none"
+else
+    echo "Skipped ($skipped):"
+    for name in "${SKIPPED_NAMES[@]}"; do
+        echo "  - $name"
+    done
+fi
+
+if [[ $not_found -eq 0 ]]; then
+    echo "Failed (0): none"
+else
+    echo "Failed ($not_found):"
+    for name in "${FAILED_NAMES[@]}"; do
+        echo "  - $name"
+    done
+    echo "error: $not_found skill name(s) did not match any directory under $SKILLS_SRC (see --list)" >&2
+fi
+
+if [[ $PAUSE -eq 1 ]]; then
+    echo
+    printf 'Press Enter to close...'
+    if IFS= read -r _; then
+        echo
+    else
+        echo
+        echo "warning: --pause requested but stdin reached EOF; continuing without waiting." >&2
+    fi
+fi
+
+exit "$exit_status"
