@@ -129,6 +129,16 @@ jobs:
           assert_contains "$failed_pause_output" "Status: Installation failed"
           assert_contains "$failed_pause_output" "Press Enter to close..."
 
+          failed_pause_eof_rc=0
+          failed_pause_eof_output="$(./install.sh --pause --dest "$test_root/failed-pause-eof" no-such-skill </dev/null 2>&1)" || failed_pause_eof_rc=$?
+          if [[ $failed_pause_eof_rc -ne 1 ]]; then
+            echo "expected paused invalid install with EOF to exit 1, got $failed_pause_eof_rc" >&2
+            exit 1
+          fi
+          assert_contains "$failed_pause_eof_output" "Status: Installation failed"
+          assert_contains "$failed_pause_eof_output" "Press Enter to close..."
+          assert_contains "$failed_pause_eof_output" "warning: --pause requested but stdin reached EOF; continuing without waiting."
+
           help_output="$(./install.sh --help)"
           assert_contains "$help_output" "--pause"
       - name: reject path-traversal skill names (issue #44)
