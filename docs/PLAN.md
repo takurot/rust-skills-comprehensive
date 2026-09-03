@@ -44,6 +44,14 @@ eval against the course's own exercises/solutions is now piloted for 2 exercises
 entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
 follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
+**Frontmatter validator robustness hardening (2026-09-04, issue #46)**: addressed four validation gaps in
+`scripts/check-skill-frontmatter.sh`: (1) added an explicit check that frontmatter closes with a second `---`
+delimiter line, preventing unclosed files from being parsed through the body; (2) unified the quote-exclusion
+logic so that valid quoted YAML scalar descriptions (e.g. `"Note: foo"`) do not falsely trigger the `: ` check;
+(3) enabled `shopt -s nullglob` and added an explicit check for empty skill directories to prevent literal glob
+expansion and bash < 4.4 unbound variable crashes; (4) replaced `wc -l` with `awk 'END{print NR}'` so line budget
+verification properly counts unterminated final lines.
+
 **Installer robustness hardening (2026-09-03, issue #45)**: addressed four installer robustness issues:
 (1) replaced `--force`'s non-atomic `rm -rf` + `cp`/`ln` sequence with a stage-then-swap mechanism
 and trap-backed rollback/cleanup (`.tmp.*` and `.old.*`), ensuring that aborts or copy errors never
