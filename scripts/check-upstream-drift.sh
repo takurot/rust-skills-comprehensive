@@ -26,7 +26,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$SCRIPT_DIR/.."
-PLAN_FILE="$REPO_DIR/docs/PLAN.md"
+PLAN_FILE="${PLAN_FILE:-$REPO_DIR/docs/PLAN.md}"
 UPSTREAM_REPO="google/comprehensive-rust"
 
 if [[ ! -f "$PLAN_FILE" ]]; then
@@ -40,13 +40,20 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 
 # Extract the pinned commit from "Upstream pin: `ref/comprehensive-rust` @ `<sha>` (<date>)."
-pin="$(grep -oE '^- \*\*Upstream pin\*\*: `ref/comprehensive-rust` @ `[0-9a-f]{7,40}`' "$PLAN_FILE" \
-  | grep -oE '[0-9a-f]{7,40}' | tail -1)"
+pin_matches="$(grep -oE '^- \*\*Upstream pin\*\*: `ref/comprehensive-rust` @ `[0-9a-f]{7,40}`' "$PLAN_FILE" \
+  | grep -oE '[0-9a-f]{7,40}' || true)"
 
-if [[ -z "$pin" ]]; then
+if [[ -z "$pin_matches" ]]; then
   echo "ERROR: could not find the Upstream pin commit in $PLAN_FILE" >&2
   exit 1
 fi
+
+pin_count="$(printf '%s\n' "$pin_matches" | grep -c .)"
+if [[ "$pin_count" -gt 1 ]]; then
+  echo "ERROR: multiple Upstream pin commits found in $PLAN_FILE" >&2
+  exit 1
+fi
+pin="$pin_matches"
 
 # skill -> upstream directory prefix(es), one "skill|prefix" pair per line. Kept as a flat list
 # (not an associative array) for bash 3.2 compatibility (docs/WORKFLOW.md §5). Derived from
@@ -86,21 +93,39 @@ rust-ffi|src/android/interoperability/with-c
 rust-ffi|src/android/interoperability/cpp
 "
 
-# Fetch truncation signal (`.truncated`, if the API ever sets it) and the returned file count
-# on the first line, then the changed filenames — one `gh api` call, split with `tail`/`head`
-# so we don't need a second round trip. No `--paginate`: this endpoint returns a single object,
-# not a list, and `--paginate` mishandles the multi-line `--jq` output above (it expects the
-# filtered result to be a JSON array to concatenate across pages). Link-header pagination
-# wouldn't recover files past the `files` array cap anyway — see the truncation check below.
-compare_output="$(gh api "repos/$UPSTREAM_REPO/compare/${pin}...main" \
-  --jq '([(.truncated // false | tostring), (.files // [] | length | tostring)] | join(" ")),
-        (.files[]?.filename)' 2>&1)" \
-  || { echo "ERROR: gh api compare against $UPSTREAM_REPO failed: $compare_output" >&2; exit 1; }
+# Fetch status, truncation signal (`.truncated`), and returned file count on the first line,
+# then the changed filenames — one `gh api` call, split with `tail`/`head` so we don't need
+# a second round trip. Stderr is captured separately so non-fatal CLI warnings do not corrupt
+# parsing of the first meta line.
+err_file="$(mktemp "${TMPDIR:-/tmp}/check-drift-err.XXXXXX")"
+trap 'rm -f "$err_file"' EXIT
+
+if ! compare_output="$(gh api "repos/$UPSTREAM_REPO/compare/${pin}...main" \
+  --jq '([(.status // "unknown"), (.truncated // false | tostring), (.files // [] | length | tostring)] | join(" ")),
+        (.files[]?.filename)' 2>"$err_file")"; then
+  err_msg="$(cat "$err_file")"
+  rm -f "$err_file"
+  trap - EXIT
+  echo "ERROR: gh api compare against $UPSTREAM_REPO failed: ${err_msg:-$compare_output}" >&2
+  exit 1
+fi
+
+if [[ -s "$err_file" ]]; then
+  cat "$err_file" >&2
+fi
+rm -f "$err_file"
+trap - EXIT
 
 meta_line="$(printf '%s\n' "$compare_output" | head -1)"
-truncated="$(printf '%s' "$meta_line" | cut -d' ' -f1)"
-files_count="$(printf '%s' "$meta_line" | cut -d' ' -f2)"
+status_val="$(printf '%s' "$meta_line" | cut -d' ' -f1)"
+truncated="$(printf '%s' "$meta_line" | cut -d' ' -f2)"
+files_count="$(printf '%s' "$meta_line" | cut -d' ' -f3)"
 changed_files="$(printf '%s\n' "$compare_output" | tail -n +2)"
+
+if [[ "$status_val" != "ahead" && "$status_val" != "identical" ]]; then
+  echo "ERROR: compare status is '$status_val' (expected 'ahead' or 'identical'). Upstream branch may have diverged or pin is unreachable from main." >&2
+  exit 1
+fi
 
 # GitHub's compare-two-commits API caps the `files` array (observed cap: 300 entries) and does
 # not expose Link-header pagination over it, so `--paginate` cannot recover files past the cap.
@@ -114,8 +139,8 @@ fi
 drift_found=0
 
 while IFS='|' read -r skill prefix; do
-  [[ -z "$skill" ]] && continue
-  matches="$(printf '%s\n' "$changed_files" | grep -E "^${prefix}(/|$)" || true)"
+  [[ -z "$skill" || -z "$prefix" ]] && continue
+  matches="$(printf '%s\n' "$changed_files" | awk -v p="$prefix" 'index($0, p) == 1 && (substr($0, length(p)+1, 1) == "/" || length($0) == length(p))')"
   if [[ -n "$matches" ]]; then
     drift_found=1
     count="$(printf '%s\n' "$matches" | grep -c .)"
