@@ -1,6 +1,6 @@
 # rust-skills-comprehensive 開発ワークフロー
 
-**最終更新:** 2026-08-29
+**最終更新:** 2026-09-03
 **対象:** `rust-skills-comprehensive` — Comprehensive Rustから派生したClaude Code skill集
 
 この文書は、このリポジトリでskillの追加・更新・`install.sh`の変更を行う際に、内容と
@@ -158,12 +158,17 @@ Validateで見つかった問題を修正し、同じ確認を再実行する。
 ./install.sh --dest /tmp/rsc-install-test --symlink <name>  # symlink install
 ./install.sh --dest /tmp/rsc-install-test <name>      # 既存install（--forceなし）がskipされるか
 ./install.sh --dest /tmp/rsc-install-test --force <name>    # --forceでの上書き
-rm -rf /tmp/rsc-install-test
+./install.sh --dest /tmp/rsc-install-test <name> no-such-skill  # 部分成功をsummary後にexit 1で返すか
+printf '\n' | ./install.sh --pause --dest /tmp/rsc-install-pause-test <name>  # summary後にEnterを待つか
+./install.sh --pause --dest /tmp/rsc-install-pause-eof-test <name> </dev/null # EOFでもhangしないか
+rm -rf /tmp/rsc-install-test /tmp/rsc-install-pause-test /tmp/rsc-install-pause-eof-test
 ```
 
 同じ手順は`.github/workflows/ci.yml`の`install-smoke-test` jobでも`rust-api-design`を対象に
-自動実行される（CIの実行環境で完結し、開発者のhome/globalなskill installには触れない）。
-push/PRで自動的に再確認されるが、ローカルでも変更直後に一度手で流す。
+自動実行される。project / custom / 一時`HOME`を使うglobal scopeの最終summary、copy / symlink、
+skip、valid + invalidの部分成功、`--pause`、stdin EOF、exit statusをassertし、CIの実行環境で
+完結するため開発者のhome/globalなskill installには触れない。push/PRで自動的に再確認されるが、
+ローカルでも変更直後に一度手で流す。
 
 `shellcheck --severity=warning install.sh scripts/*.sh`もCIの`shellcheck` jobで実行される
 （info levelの指摘、例: `ls`より`find`を推奨、は対象外——このworkflow変更のために

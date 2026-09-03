@@ -44,6 +44,15 @@ eval against the course's own exercises/solutions is now piloted for 2 exercises
 entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
 follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
+**Installer completion feedback (2026-09-03, issue #52)**: retained the existing start/progress
+output and replaced its terse final `Done` line with a result summary that repeats the destination
+and mode and groups the exact installed, skipped, and failed skill names. Added opt-in `--pause`
+for launchers whose terminal window closes immediately after the command; ordinary CLI/CI runs
+remain non-interactive, and EOF does not turn the pause into a hang or change the install result's
+exit status. README, the `--help` usage block, the manual workflow, and CI smoke assertions are
+kept in sync. This is an installer-only change: no skill content, source pin, attribution, or
+delineation changed.
+
 **CI hardening (2026-08-31, issues #1–#3)**: closed a real gap in `skill-frontmatter` —
 the script checked presence of frontmatter keys but never caught the actual `rust-pinning`
 regression class above (a `: ` inside an unquoted YAML `description:` value truncates it);
