@@ -44,6 +44,15 @@ eval against the course's own exercises/solutions is now piloted for 2 exercises
 entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
 follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
+**Installer robustness hardening (2026-09-03, issue #45)**: addressed four installer robustness issues:
+(1) replaced `--force`'s non-atomic `rm -rf` + `cp`/`ln` sequence with a stage-then-swap mechanism
+and trap-backed rollback/cleanup (`.tmp.*` and `.old.*`), ensuring that aborts or copy errors never
+leave existing installs destroyed; (2) added an explicit check after the auto-discovery loop to
+prevent bash < 4.4 `unbound variable` crashes when `"${SELECTED[@]}"` is expanded on an empty array
+under `set -u`; (3) verified `SKILLS_SRC` directory check order remains safe before `mkdir -p "$DEST"`;
+(4) replaced line-numbered `sed` extraction in `usage()` with a self-contained heredoc so `--help`
+does not silently break upon future header edits. CI smoke test assertions added to `ci.yml`.
+
 **Installer completion feedback (2026-09-03, issue #52)**: retained the existing start/progress
 output and replaced its terse final `Done` line with a result summary that repeats the destination
 and mode and groups the exact installed, skipped, and failed skill names. Added opt-in `--pause`

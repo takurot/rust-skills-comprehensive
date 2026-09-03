@@ -167,3 +167,21 @@ jobs:
           # The canary must survive every attempt above — a regression here means a
           # traversal name reached rm -rf instead of being rejected up front.
           test -f /tmp/rsc-traversal-canary/marker
+      - name: empty skills directory exits cleanly with error (issue #45)
+        run: |
+          set -euo pipefail
+          empty_dir="$(mktemp -d)"
+          mkdir -p "$empty_dir/empty_repo/skills"
+          cp install.sh "$empty_dir/empty_repo/"
+          rc=0
+          out="$(cd "$empty_dir/empty_repo" && ./install.sh --dest "$empty_dir/dest" 2>&1)" || rc=$?
+          if [[ $rc -ne 1 ]]; then
+            echo "expected empty skills dir install to exit 1, got $rc" >&2
+            exit 1
+          fi
+          if [[ "$out" != *"error: no skills found in"* ]]; then
+            echo "expected 'error: no skills found in' message, got:" >&2
+            echo "$out" >&2
+            exit 1
+          fi
+          rm -rf "$empty_dir"

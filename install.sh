@@ -30,8 +30,50 @@ FORCE=0
 PAUSE=0
 SELECTED=()
 
+CURRENT_TMP=""
+CURRENT_BACKUP=""
+CURRENT_TARGET=""
+
+cleanup() {
+    if [[ -n "${CURRENT_BACKUP:-}" && ( -e "$CURRENT_BACKUP" || -L "$CURRENT_BACKUP" ) ]]; then
+        if [[ -n "${CURRENT_TARGET:-}" && ! -e "$CURRENT_TARGET" && ! -L "$CURRENT_TARGET" ]]; then
+            mv "$CURRENT_BACKUP" "$CURRENT_TARGET" 2>/dev/null || true
+        else
+            rm -rf "$CURRENT_BACKUP"
+        fi
+    fi
+    if [[ -n "${CURRENT_TMP:-}" && ( -e "$CURRENT_TMP" || -L "$CURRENT_TMP" ) ]]; then
+        rm -rf "$CURRENT_TMP"
+    fi
+}
+
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
 usage() {
-    sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+    cat <<'EOF'
+Install script for rust-skills-comprehensive.
+
+Copies (or symlinks) one or more skills from this repo's skills/ directory
+into a Claude Code skills directory — either a project's .claude/skills/
+or the user's global ~/.claude/skills/.
+
+Usage:
+  ./install.sh                          # install all skills, project-level (./.claude/skills)
+  ./install.sh --global                 # install all skills, global (~/.claude/skills)
+  ./install.sh --dest /path/to/project  # install all skills into <path>/.claude/skills
+  ./install.sh rust-api-design rust-async     # install only the named skills
+  ./install.sh --global rust-pinning          # combine scope + selection
+  ./install.sh --symlink                # symlink instead of copy (repo devs: live-edit)
+  ./install.sh --pause                  # wait for Enter after the final summary
+  ./install.sh --list                   # list available skills and exit
+  ./install.sh --force ...              # overwrite an existing install of the same skill
+
+Re-run any time to pick up updates (add --force to overwrite existing copies;
+symlink installs always reflect the latest content with no re-run needed).
+EOF
 }
 
 list_skills() {
@@ -123,7 +165,12 @@ if [[ ${#SELECTED[@]} -eq 0 ]]; then
     # Avoid `mapfile`/`readarray` (bash 4+ only) — macOS ships bash 3.2 by default.
     while IFS= read -r name; do
         SELECTED+=("$name")
-    done < <(cd "$SKILLS_SRC" && ls -d */ | sed 's#/$##')
+    done < <(cd "$SKILLS_SRC" && ls -d */ 2>/dev/null | sed 's#/$##')
+fi
+
+if [[ ${#SELECTED[@]} -eq 0 ]]; then
+    echo "error: no skills found in $SKILLS_SRC" >&2
+    exit 1
 fi
 
 echo "Installing ${#SELECTED[@]} skill(s) → $DEST  (mode: $MODE)"
@@ -166,14 +213,52 @@ for name in "${SELECTED[@]}"; do
             SKIPPED_NAMES+=("$name")
             continue
         fi
-        rm -rf "$target"
     fi
 
+    # Stage-then-swap: copy or symlink into a temporary path first so that
+    # any failure (e.g. disk full, permission error, Ctrl-C) leaves existing
+    # installs intact.
+    tmp_target="$DEST/.tmp.$name.$RANDOM.$$"
+    backup_target=""
+    CURRENT_TMP="$tmp_target"
+    CURRENT_TARGET="$target"
+    CURRENT_BACKUP=""
+
     if [[ "$MODE" == "symlink" ]]; then
-        ln -s "$src" "$target"
+        ln -s "$src" "$tmp_target"
     else
-        cp -R "$src" "$target"
+        cp -R "$src" "$tmp_target"
     fi
+
+    if [[ -e "$target" || -L "$target" ]]; then
+        backup_target="$DEST/.old.$name.$RANDOM.$$"
+        CURRENT_BACKUP="$backup_target"
+        mv "$target" "$backup_target"
+    fi
+
+    if ! mv "$tmp_target" "$target"; then
+        echo "  ✗ $name — failed to activate target" >&2
+        if [[ -n "$backup_target" && ( -e "$backup_target" || -L "$backup_target" ) ]]; then
+            mv "$backup_target" "$target" 2>/dev/null || true
+        fi
+        rm -rf "$tmp_target"
+        if [[ -n "$backup_target" ]]; then
+            rm -rf "$backup_target"
+        fi
+        CURRENT_TMP=""
+        CURRENT_BACKUP=""
+        CURRENT_TARGET=""
+        exit 1
+    fi
+
+    if [[ -n "$backup_target" && ( -e "$backup_target" || -L "$backup_target" ) ]]; then
+        rm -rf "$backup_target"
+    fi
+
+    CURRENT_TMP=""
+    CURRENT_BACKUP=""
+    CURRENT_TARGET=""
+
     echo "  ✓ $name"
     installed=$((installed + 1))
     INSTALLED_NAMES+=("$name")
