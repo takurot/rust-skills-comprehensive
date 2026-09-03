@@ -5,10 +5,18 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   shellcheck:
     name: Shellcheck install.sh and scripts/*.sh
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Run shellcheck (warning severity — see docs/WORKFLOW.md §5)
@@ -17,6 +25,7 @@ jobs:
   skill-frontmatter:
     name: Skill frontmatter and line budget
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Check SKILL.md frontmatter and line budget
@@ -25,6 +34,7 @@ jobs:
   install-list-sync:
     name: install.sh --list matches skills/
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Check install.sh --list vs skills/ directories
@@ -33,6 +43,7 @@ jobs:
   link-check:
     name: Skill/docs cross-reference links
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Check relative links and [[name]] references
@@ -41,10 +52,11 @@ jobs:
   markdown-lint:
     name: Markdown lint (heading structure, code fence language)
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Run markdownlint-cli2
-        uses: DavidAnson/markdownlint-cli2-action@v24
+        uses: DavidAnson/markdownlint-cli2-action@21c1be1b93ad9ed58fa840aacc3f279cde2a72ff # v24
         with:
           globs: |
             skills/**/*.md
@@ -55,6 +67,7 @@ jobs:
   install-smoke-test:
     name: install.sh smoke test
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: --list
@@ -64,9 +77,23 @@ jobs:
       - name: symlink install
         run: ./install.sh --dest /tmp/rsc-install-test-symlink --symlink rust-api-design
       - name: re-run without --force is skipped (no error, no overwrite)
-        run: ./install.sh --dest /tmp/rsc-install-test rust-api-design
+        run: |
+          set -euo pipefail
+          installed_file="/tmp/rsc-install-test/.claude/skills/rust-api-design/SKILL.md"
+          echo "canary modification" >> "$installed_file"
+          checksum="$(sha256sum "$installed_file")"
+          ./install.sh --dest /tmp/rsc-install-test rust-api-design
+          echo "$checksum" | sha256sum -c -
       - name: --force overwrites
-        run: ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
+        run: |
+          set -euo pipefail
+          installed_file="/tmp/rsc-install-test/.claude/skills/rust-api-design/SKILL.md"
+          ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
+          if grep -q "canary modification" "$installed_file"; then
+            echo "expected --force to overwrite canary modification" >&2
+            exit 1
+          fi
+          cmp -s "$installed_file" skills/rust-api-design/SKILL.md
       - name: --force mode transition (copy to symlink, and symlink to copy)
         run: |
           set -euo pipefail
