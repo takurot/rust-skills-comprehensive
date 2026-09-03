@@ -67,6 +67,27 @@ jobs:
         run: ./install.sh --dest /tmp/rsc-install-test rust-api-design
       - name: --force overwrites
         run: ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
+      - name: --force mode transition (copy to symlink, and symlink to copy)
+        run: |
+          set -euo pipefail
+          ./install.sh --dest /tmp/rsc-install-test --force --symlink rust-api-design
+          test -L /tmp/rsc-install-test/.claude/skills/rust-api-design
+          ./install.sh --dest /tmp/rsc-install-test --force rust-api-design
+          test -d /tmp/rsc-install-test/.claude/skills/rust-api-design
+          test ! -L /tmp/rsc-install-test/.claude/skills/rust-api-design
+      - name: reject empty --dest argument
+        run: |
+          set -euo pipefail
+          rc=0
+          out="$(./install.sh --dest "" rust-api-design 2>&1)" || rc=$?
+          if [[ $rc -ne 1 ]]; then
+            echo "expected empty --dest to exit 1, got $rc" >&2
+            exit 1
+          fi
+          if [[ "$out" != *"error: --dest requires a path argument"* ]]; then
+            echo "expected --dest path error message, got: $out" >&2
+            exit 1
+          fi
       - name: installed file is present and non-empty
         run: test -s /tmp/rsc-install-test/.claude/skills/rust-api-design/SKILL.md
       - name: "completion summary and pause behavior (issue #52)"

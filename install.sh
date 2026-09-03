@@ -104,7 +104,7 @@ while [[ $# -gt 0 ]]; do
             # PROJECT_DIR="$2" and fail later with a raw, confusing error
             # (an unbound-variable crash, or `mkdir: illegal option --`)
             # instead of this script's own usage message (issue #25 review).
-            if [[ $# -lt 2 || "$2" == -* ]]; then
+            if [[ $# -lt 2 || -z "$2" || "$2" == -* ]]; then
                 echo "error: --dest requires a path argument" >&2
                 usage
                 exit 1
@@ -238,16 +238,9 @@ for name in "${SELECTED[@]}"; do
 
     if ! mv "$tmp_target" "$target"; then
         echo "  ✗ $name — failed to activate target" >&2
-        if [[ -n "$backup_target" && ( -e "$backup_target" || -L "$backup_target" ) ]]; then
-            mv "$backup_target" "$target" 2>/dev/null || true
-        fi
-        rm -rf "$tmp_target"
-        if [[ -n "$backup_target" ]]; then
-            rm -rf "$backup_target"
-        fi
-        CURRENT_TMP=""
-        CURRENT_BACKUP=""
-        CURRENT_TARGET=""
+        # Exit directly: cleanup() restores $CURRENT_BACKUP to $CURRENT_TARGET
+        # if target is missing, deletes $CURRENT_TMP, and never deletes
+        # $CURRENT_BACKUP if restoring it fails.
         exit 1
     fi
 
