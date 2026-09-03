@@ -44,6 +44,13 @@ eval against the course's own exercises/solutions is now piloted for 2 exercises
 entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
 follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
+**Install-list sync check robustness hardening (2026-09-04, issue #47)**: addressed four robustness issues in
+`scripts/check-install-list-sync.sh`: (1) replaced `ls -d */` with `shopt -s nullglob` and bash 3.2-safe array
+enumeration guarded against empty array expansions under `set -u`; (2) captured `install.sh --list` exit status and
+output, replacing silent pipefail aborts with an explicit `FAIL:` diagnostic message; (3) enforced `export LC_ALL=C`
+and explicit `LC_ALL=C` sort/comm invocations to eliminate locale-dependent collation drift; (4) enhanced `--list`
+parsing with `awk 'NR>1 && NF {print $1}'` to skip empty lines, and allowed test overrides via `SKILLS_DIR` and `INSTALL_SCRIPT`.
+
 **Frontmatter validator robustness hardening (2026-09-04, issue #46)**: addressed four validation gaps in
 `scripts/check-skill-frontmatter.sh`: (1) added an explicit check that frontmatter closes with a second `---`
 delimiter line, preventing unclosed files from being parsed through the body; (2) unified the quote-exclusion
