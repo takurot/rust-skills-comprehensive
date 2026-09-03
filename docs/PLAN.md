@@ -48,8 +48,9 @@ follow-up. Phase 4 is done for what's in-scope for this repo — see the entry b
 `.github/workflows/ci.yml`: (1) pinned third-party `DavidAnson/markdownlint-cli2-action` to full 40-character
 commit SHA `21c1be1b93ad9ed58fa840aacc3f279cde2a72ff` (`v24`); (2) declared top-level `permissions: contents: read`
 to enforce the principle of least privilege; (3) configured explicit `timeout-minutes` on all 6 jobs (5m for lints/checks,
-10m for smoke test) to avoid hung runners; (4) added a top-level `concurrency` group with `cancel-in-progress: true`
-to cancel superseded runs on rapid pushes; (5) hardened the `install-smoke-test` "no overwrite" verification by appending
+10m for smoke test) to avoid hung runners; (4) added a top-level `concurrency` group with `cancel-in-progress`
+scoped to pull requests (`${{ github.ref != 'refs/heads/main' }}`) to cancel superseded PR runs without breaking main pushes;
+(5) hardened the `install-smoke-test` "no overwrite" verification by appending
 a canary modification, asserting SHA256 checksum identity across skipped re-runs, and confirming `--force` cleanly restores
 the pristine file.
 

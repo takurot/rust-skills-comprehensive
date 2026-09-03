@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   shellcheck:
@@ -93,7 +93,7 @@ jobs:
             echo "expected --force to overwrite canary modification" >&2
             exit 1
           fi
-          cmp -s "$installed_file" skills/rust-api-design/SKILL.md
+          cmp "$installed_file" skills/rust-api-design/SKILL.md
       - name: --force mode transition (copy to symlink, and symlink to copy)
         run: |
           set -euo pipefail
