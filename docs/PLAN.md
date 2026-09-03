@@ -44,6 +44,14 @@ eval against the course's own exercises/solutions is now piloted for 2 exercises
 entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
 follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
+**Project automation workflow hardening (2026-09-04, issue #50)**: addressed four reliability and robustness
+issues in `.github/workflows/claude-code.yml`: (1) removed `continue-on-error: true` so genuine API failures
+(expired tokens, mutation errors, network issues) trigger alerts instead of being silently swallowed;
+(2) replaced brittle hardcoded `STATUS_FIELD_ID` and `IN_PROGRESS_OPTION_ID` with dynamic runtime resolution from
+`PROJECT_ID` via GraphQL; (3) expanded `projectItems(first: 20)` to `first: 100` and replaced `head -1` pipe with
+`--jq` array indexing `[...][0] // empty`, eliminating broken pipe SIGPIPE (exit 141) risks under `set -eo pipefail`;
+(4) added `timeout-minutes: 5` to the `mark-in-progress` job.
+
 **CI workflow hardening (2026-09-04, issue #49)**: addressed five CI hardening and test quality issues in
 `.github/workflows/ci.yml`: (1) pinned third-party `DavidAnson/markdownlint-cli2-action` to full 40-character
 commit SHA `21c1be1b93ad9ed58fa840aacc3f279cde2a72ff` (`v24`); (2) declared top-level `permissions: contents: read`
