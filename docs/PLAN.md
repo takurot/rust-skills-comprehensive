@@ -44,6 +44,14 @@ eval against the course's own exercises/solutions is now piloted for 2 exercises
 entry below and `docs/eval/README.md` — with several mapped exercises still deferred to a
 follow-up. Phase 4 is done for what's in-scope for this repo — see the entry below.
 
+**Upstream drift check robustness hardening (2026-09-04, issue #48)**: addressed four robustness issues in
+`scripts/check-upstream-drift.sh`: (1) separated `gh api` stdout and stderr via a temporary error file, preventing
+CLI warnings on stderr from corrupting metadata header parsing; (2) added explicit validation of GitHub compare's
+`.status` field, accepting only `"ahead"` or `"identical"` and rejecting diverged/behind branches; (3) replaced
+`tail -1` pin extraction with explicit count validation ensuring exactly one Upstream pin exists in `docs/PLAN.md`;
+(4) replaced regex-based prefix evaluation with literal prefix matching via POSIX `awk`, preventing special characters
+like `.` from acting as wildcards; allowed test overrides via `PLAN_FILE`.
+
 **Install-list sync check robustness hardening (2026-09-04, issue #47)**: addressed four robustness issues in
 `scripts/check-install-list-sync.sh`: (1) replaced `ls -d */` with `shopt -s nullglob` and bash 3.2-safe array
 enumeration guarded against empty array expansions under `set -u`; (2) captured `install.sh --list` exit status and
